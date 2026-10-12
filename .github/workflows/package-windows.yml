@@ -1,16 +1,5 @@
-# ZAVIX modifications, 2026-10-12: assemble checked Windows payload with original legal notices.
+# ZAVIX Windows V1: one portable executable and corresponding sources.
 name: Package ZAVIX Windows
-on:
-  workflow_dispatch:
-    inputs:
-      build_run:
-        description: Successful Windows build run
-        required: true
-        type: string
-      build_revision:
-        description: SHA of the compiled client
-        required: true
-        type: string
 permissions:
   contents: read
   actions: read
@@ -23,85 +12,104 @@ jobs:
     runs-on: windows-2022
     timeout-minutes: 60
     steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
-        with:
-          submodules: recursive
-          fetch-depth: 0
-      - name: Verify build provenance and packaging changes
-        env:
-          GH_TOKEN: ${{ github.token }}
-          BUILD_RUN: ${{ inputs.build_run }}
-          BUILD_REVISION: ${{ inputs.build_revision }}
-        shell: bash
-        run: |
-          gh api "repos/${{ github.repository }}/actions/runs/$BUILD_RUN" > build-provenance.json
-          python -c 'import json,os,re; b=json.load(open("build-provenance.json")); assert b["head_sha"]==os.environ["BUILD_REVISION"] and b["conclusion"]=="success" and b["head_branch"]=="main" and b["event"]=="workflow_dispatch"; assert re.fullmatch("[0-9a-f]{40}",b["head_sha"])'
-          git diff --name-only "$BUILD_REVISION" HEAD > packaging-changes.txt
-          python -c 'from pathlib import Path; paths=Path("packaging-changes.txt").read_text().splitlines(); assert all(p.startswith(("scripts/", ".github/workflows/", "branding/WindowInjection-")) or p in ("THIRD-PARTY-LICENSES.md", "README.md", "README-RUSTDESK.md", "BUILD-ZAVIX.md") for p in paths), paths'
-      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
-        with:
-          name: zavix-windows-x64-bundle
-          path: dist
-          run-id: ${{ inputs.build_run }}
-          github-token: ${{ github.token }}
-      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
-        with:
-          name: bridge-artifact
-          path: ./
-          run-id: ${{ inputs.build_run }}
-          github-token: ${{ github.token }}
-      - uses: dtolnay/rust-toolchain@e97e2d8cc328f1b50210efc529dca0028893a2d9
-        with:
-          toolchain: '1.75'
-          components: rustfmt
-      - uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32
-        with:
-          prefix-key: windows-2022
-      - uses: lukka/run-vcpkg@b1a0dd252f06b9e25b3c022a9a03bd7a427fb6a2
-        with:
-          vcpkgDirectory: C:\vcpkg
-          vcpkgGitCommitId: ${{ env.VCPKG_COMMIT_ID }}
-          doNotCache: false
-      - name: Restore installed native dependency notices
-        shell: bash
-        env:
-          VCPKG_DEFAULT_HOST_TRIPLET: x64-windows-static
-        run: |
-          "$VCPKG_ROOT/vcpkg" install --triplet x64-windows-static --x-install-root="$VCPKG_ROOT/installed"
-      - name: Collect licenses and verify the real binary
-        run: |
-          python scripts/collect_licenses.py
-          if ($LASTEXITCODE -ne 0) { throw 'License collection failed' }
-          ./scripts/test_windows.ps1 -Bundle ./dist
-      - name: Assemble portable EXE
-        shell: bash
-        run: |
-          sed -i '/dpiAware/d' res/manifest.xml
-          pushd libs/portable
-          pip3 install -r requirements.txt
-          python3 generate.py -f ../../dist/ -o . -e ../../dist/ZAVIXRemote.exe
-          popd
-          mkdir -p SignOutput
-          cp target/release/rustdesk-portable-packer.exe SignOutput/ZAVIXRemote-1.5.0.1.exe
-      - uses: microsoft/setup-msbuild@6fb02220983dee41ce7ae257b6f4d8f9bf5ed4ce
-      - name: Assemble MSI
-        run: |
-          Push-Location res/msi
-          python preprocess.py --arp --revision-version 1 --app-name ZAVIXRemote --manufacturer ZAVIX -d ../../dist
-          if ($LASTEXITCODE -ne 0) { throw 'MSI preprocessing failed' }
-          nuget restore msi.sln
-          if ($LASTEXITCODE -ne 0) { throw 'NuGet failed' }
-          msbuild msi.sln -p:Configuration=Release -p:Platform=x64 /p:TargetVersion=Windows10
-          if ($LASTEXITCODE -ne 0) { throw 'MSI failed' }
-          $msi = Get-ChildItem ./Package/bin/*/Release/en-us/Package.msi | Select-Object -First 1
-          Copy-Item $msi.FullName ../../SignOutput/ZAVIXRemote-1.5.0.1.msi
-          Pop-Location
-          python scripts/package_release.py
-          if ($LASTEXITCODE -ne 0) { throw 'Release verification failed' }
-          Copy-Item build-provenance.json SignOutput/
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
-        with:
-          name: zavix-windows-release
-          path: SignOutput/
-          if-no-files-found: error
-          retention-days: 30
+    - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+      with:
+        submodules: recursive
+        fetch-depth: 0
+    - name: Verify build provenance and packaging changes
+      env:
+        GH_TOKEN: ${{ github.token }}
+        BUILD_RUN: ${{ inputs.build_run }}
+        BUILD_REVISION: ${{ inputs.build_revision }}
+      shell: bash
+      run: 'gh api "repos/${{ github.repository }}/actions/runs/$BUILD_RUN" > build-provenance.json
+
+        python -c ''import json,os,re; b=json.load(open("build-provenance.json")); assert b["head_sha"]==os.environ["BUILD_REVISION"]
+        and b["conclusion"]=="success" and b["head_branch"]=="main" and b["event"]=="workflow_dispatch"; assert re.fullmatch("[0-9a-f]{40}",b["head_sha"])''
+
+        git diff --name-only "$BUILD_REVISION" HEAD > packaging-changes.txt
+
+        python -c ''from pathlib import Path; paths=Path("packaging-changes.txt").read_text().splitlines(); assert all(p.startswith(("scripts/",
+        ".github/workflows/", "branding/WindowInjection-")) or p in ("THIRD-PARTY-LICENSES.md", "README.md", "README-RUSTDESK.md",
+        "BUILD-ZAVIX.md") for p in paths), paths''
+
+        '
+    - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+      with:
+        name: zavix-windows-x64-bundle
+        path: dist
+        run-id: ${{ inputs.build_run }}
+        github-token: ${{ github.token }}
+    - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+      with:
+        name: bridge-artifact
+        path: ./
+        run-id: ${{ inputs.build_run }}
+        github-token: ${{ github.token }}
+    - uses: dtolnay/rust-toolchain@e97e2d8cc328f1b50210efc529dca0028893a2d9
+      with:
+        toolchain: '1.75'
+        components: rustfmt
+    - uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32
+      with:
+        prefix-key: windows-2022
+    - uses: lukka/run-vcpkg@b1a0dd252f06b9e25b3c022a9a03bd7a427fb6a2
+      with:
+        vcpkgDirectory: C:\vcpkg
+        vcpkgGitCommitId: ${{ env.VCPKG_COMMIT_ID }}
+        doNotCache: false
+    - name: Restore installed native dependency notices
+      shell: bash
+      env:
+        VCPKG_DEFAULT_HOST_TRIPLET: x64-windows-static
+      run: "for attempt in 1 2 3; do\n  if \"$VCPKG_ROOT/vcpkg\" install --triplet x64-windows-static --x-install-root=\"\
+        $VCPKG_ROOT/installed\"; then\n    exit 0\n  fi\n  if [ \"$attempt\" -eq 3 ]; then\n    find \"$VCPKG_ROOT/buildtrees/libyuv\"\
+        \ -name '*err.log' -exec cat {} \\; || true\n    exit 1\n  fi\n  sleep 15\ndone\n"
+    - name: Collect licenses and verify the real binary
+      run: 'python scripts/collect_licenses.py
+
+        if ($LASTEXITCODE -ne 0) { throw ''License collection failed'' }
+
+        ./scripts/test_windows.ps1 -Bundle ./dist
+
+        '
+    - name: Assemble portable EXE
+      shell: bash
+      run: 'sed -i ''/dpiAware/d'' res/manifest.xml
+
+        pushd libs/portable
+
+        pip3 install -r requirements.txt
+
+        python3 generate.py -f ../../dist/ -o . -e ../../dist/ZAVIXRemote.exe
+
+        popd
+
+        mkdir -p SignOutput
+
+        cp target/release/rustdesk-portable-packer.exe SignOutput/ZAVIXRemote-1.5.0.1.exe
+
+        '
+    - name: Verify EXE and corresponding sources
+      run: 'python scripts/package_release.py
+
+        if ($LASTEXITCODE -ne 0) { throw ''Release verification failed'' }
+
+        Copy-Item build-provenance.json SignOutput/'
+    - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+      with:
+        name: zavix-windows-release
+        path: SignOutput/
+        if-no-files-found: error
+        retention-days: 30
+'on':
+  workflow_dispatch:
+    inputs:
+      build_run:
+        description: Successful Windows build run
+        required: true
+        type: string
+      build_revision:
+        description: SHA of the compiled client
+        required: true
+        type: string

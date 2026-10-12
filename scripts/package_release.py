@@ -18,7 +18,7 @@ with tarfile.open(sources, 'w:gz') as archive:
         p = root / name
         if p.is_file(): archive.add(p, arcname='ZAVIXRemote-source/' + name, recursive=False)
 files = []
-for ext in ('exe','msi'):
+for ext in ('exe',):
     p = out / f'ZAVIXRemote-{brand["version"]}.{ext}'
     if not p.is_file() or p.stat().st_size < 1000000: raise RuntimeError(f'Missing Windows {ext} artifact')
     files.append(p)
