@@ -1,4 +1,4 @@
-# ZAVIX Windows V1: one portable executable and corresponding sources.
+# ZAVIX Windows V1: repackage the checked payload and verify the final portable executable.
 name: Package ZAVIX Windows
 permissions:
   contents: read
@@ -53,26 +53,10 @@ jobs:
     - uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32
       with:
         prefix-key: windows-2022
-    - uses: lukka/run-vcpkg@b1a0dd252f06b9e25b3c022a9a03bd7a427fb6a2
-      with:
-        vcpkgDirectory: C:\vcpkg
-        vcpkgGitCommitId: ${{ env.VCPKG_COMMIT_ID }}
-        doNotCache: false
-    - name: Restore installed native dependency notices
-      shell: bash
-      env:
-        VCPKG_DEFAULT_HOST_TRIPLET: x64-windows-static
-      run: "for attempt in 1 2 3; do\n  if \"$VCPKG_ROOT/vcpkg\" install --triplet x64-windows-static --x-install-root=\"\
-        $VCPKG_ROOT/installed\"; then\n    exit 0\n  fi\n  if [ \"$attempt\" -eq 3 ]; then\n    find \"$VCPKG_ROOT/buildtrees/libyuv\"\
-        \ -name '*err.log' -exec cat {} \\; || true\n    exit 1\n  fi\n  sleep 15\ndone\n"
-    - name: Collect licenses and verify the real binary
-      run: 'python scripts/collect_licenses.py
+    - name: Verify compiled payload and original notices
+      run: 'if (-not (Test-Path dist/legal/cargo-inventory.json)) { throw ''Build has no dependency notices'' }
 
-        if ($LASTEXITCODE -ne 0) { throw ''License collection failed'' }
-
-        ./scripts/test_windows.ps1 -Bundle ./dist
-
-        '
+        ./scripts/test_windows.ps1 -Bundle ./dist'
     - name: Assemble portable EXE
       shell: bash
       run: 'sed -i ''/dpiAware/d'' res/manifest.xml
@@ -90,6 +74,8 @@ jobs:
         cp target/release/rustdesk-portable-packer.exe SignOutput/ZAVIXRemote-1.5.0.1.exe
 
         '
+    - name: Test final portable executable
+      run: ./scripts/test_portable.ps1 -Executable ./SignOutput/ZAVIXRemote-1.5.0.1.exe
     - name: Verify EXE and corresponding sources
       run: 'python scripts/package_release.py
 
