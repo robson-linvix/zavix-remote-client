@@ -2,6 +2,8 @@
 param([Parameter(Mandatory=$true)][string]$Executable)
 $ErrorActionPreference = 'Stop'
 $exe = (Resolve-Path $Executable).Path
+$versionInfo = [System.Diagnostics.FileVersionInfo]::GetVersionInfo($exe)
+if ($versionInfo.ProductName -ne 'ZAVIX Remote' -or $versionInfo.FileDescription -ne 'ZAVIX Remote') { throw 'Final executable has incorrect Windows branding' }
 $signature = Get-AuthenticodeSignature $exe
 if ($signature.Status -ne 'NotSigned') { throw "Unexpected signature status: $($signature.Status)" }
 $psi = [System.Diagnostics.ProcessStartInfo]::new()
@@ -27,5 +29,5 @@ $payload = Join-Path $env:LOCALAPPDATA 'zavixremote'
 foreach ($file in @('ZAVIXRemote.exe', 'librustdesk.dll', 'LICENCE', 'NOTICE-ZAVIX.md', 'legal/cargo-inventory.json', 'legal/WindowInjection-LICENSE.txt')) {
     if (-not (Test-Path (Join-Path $payload $file) -PathType Leaf)) { throw "Portable payload is missing $file" }
 }
-@{result='passed';artifact=(Split-Path $exe -Leaf);sha256=(Get-FileHash $exe -Algorithm SHA256).Hash.ToLower();signature='NotSigned';configuration=$data;payload_notices=$true} | ConvertTo-Json -Depth 6 | Set-Content SignOutput/portable-runtime-evidence.json
+@{result='passed';artifact=(Split-Path $exe -Leaf);sha256=(Get-FileHash $exe -Algorithm SHA256).Hash.ToLower();signature='NotSigned';product_name=$versionInfo.ProductName;configuration=$data;payload_notices=$true} | ConvertTo-Json -Depth 6 | Set-Content SignOutput/portable-runtime-evidence.json
 Write-Host 'Final portable EXE: extraction, embedded runtime configuration and original notices passed'
