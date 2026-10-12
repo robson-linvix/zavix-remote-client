@@ -9,7 +9,7 @@ env:
   RUST_VERSION: '1.75'
   LLVM_VERSION: 15.0.6
   FLUTTER_VERSION: 3.24.5
-  VCPKG_BINARY_SOURCES: clear;x-gha,readwrite
+  VCPKG_BINARY_SOURCES: clear;files,C:/zavix-vcpkg-cache,readwrite
   VCPKG_COMMIT_ID: 9e593bb18ea69cc5095e012465dcd675a822ed0d
   VCPKG_CMAKE_VERSION: 4.3.0
   VERSION: 1.5.0.1
@@ -43,14 +43,6 @@ jobs:
           vcpkg-triplet: x64-windows-static
           build-args: --vram
     steps:
-    - name: Export GitHub Actions cache environment variables
-      uses: actions/github-script@d7906e4ad0b1822421a7e6a35d5ca353c962f410
-      with:
-        script: 'core.exportVariable(''ACTIONS_CACHE_URL'', process.env.ACTIONS_CACHE_URL || '''');
-
-          core.exportVariable(''ACTIONS_RUNTIME_TOKEN'', process.env.ACTIONS_RUNTIME_TOKEN || '''');
-
-          '
     - name: Checkout source code
       uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
       with:
@@ -111,6 +103,15 @@ jobs:
         vcpkgDirectory: C:\vcpkg
         vcpkgGitCommitId: ${{ env.VCPKG_COMMIT_ID }}
         doNotCache: false
+    - name: Restore native binary packages
+      id: native-cache
+      uses: actions/cache/restore@6f8efc29b200d32929f49075959781ed54ec270c
+      with:
+        path: C:/zavix-vcpkg-cache
+        key: zavix-vcpkg-${{ runner.os }}-${{ runner.arch }}-${{ env.VCPKG_COMMIT_ID }}-${{ hashFiles('vcpkg.json', 'res/vcpkg/**',
+          'res/vcpkg-triplets/**') }}-v1
+    - name: Create native cache directory
+      run: New-Item -ItemType Directory -Force -Path C:/zavix-vcpkg-cache | Out-Null
     - name: Install vcpkg dependencies
       env:
         VCPKG_DEFAULT_HOST_TRIPLET: ${{ matrix.job.vcpkg-triplet }}
@@ -118,6 +119,13 @@ jobs:
         $VCPKG_ROOT/installed\"; then\n    exit 0\n  fi\n  if [ \"$attempt\" -eq 3 ]; then\n    find \"$VCPKG_ROOT/buildtrees/libyuv\"\
         \ -name '*err.log' -exec cat {} \\; || true\n    exit 1\n  fi\n  sleep 15\ndone\n"
       shell: bash
+    - name: Preserve compiled native packages
+      if: ${{ always() && steps.native-cache.outputs.cache-hit != 'true' }}
+      uses: actions/cache/save@6f8efc29b200d32929f49075959781ed54ec270c
+      with:
+        path: C:/zavix-vcpkg-cache
+        key: zavix-vcpkg-${{ runner.os }}-${{ runner.arch }}-${{ env.VCPKG_COMMIT_ID }}-${{ hashFiles('vcpkg.json', 'res/vcpkg/**',
+          'res/vcpkg-triplets/**') }}-v1
     - name: Validate ZAVIX configuration
       run: python scripts/validate_config.py
     - name: Build ZAVIX Windows
