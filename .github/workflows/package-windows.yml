@@ -1,16 +1,12 @@
-# ZAVIX Windows V1: repackage the checked payload and verify the final portable executable.
+# ZAVIX Windows V1: validate the actual compiled EXE without changing its bytes.
 name: Package ZAVIX Windows
 permissions:
   contents: read
   actions: read
-env:
-  VCPKG_ROOT: C:\vcpkg
-  VCPKG_COMMIT_ID: 9e593bb18ea69cc5095e012465dcd675a822ed0d
-  VCPKG_BINARY_SOURCES: clear;x-gha,readwrite
 jobs:
   package:
     runs-on: windows-2022
-    timeout-minutes: 60
+    timeout-minutes: 15
     steps:
     - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
       with:
@@ -34,52 +30,23 @@ jobs:
         "BUILD-ZAVIX.md") for p in paths), paths''
 
         '
-    - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+    - name: Download compiled EXE and corresponding sources
+      uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
       with:
-        name: zavix-windows-x64-bundle
-        path: dist
+        name: zavix-windows-x64-unsigned
+        path: SignOutput
         run-id: ${{ inputs.build_run }}
         github-token: ${{ github.token }}
-    - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
-      with:
-        name: bridge-artifact
-        path: ./
-        run-id: ${{ inputs.build_run }}
-        github-token: ${{ github.token }}
-    - uses: dtolnay/rust-toolchain@e97e2d8cc328f1b50210efc529dca0028893a2d9
-      with:
-        toolchain: '1.75'
-        components: rustfmt
-    - uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32
-      with:
-        prefix-key: windows-2022
-    - name: Verify compiled payload and original notices
-      run: 'if (-not (Test-Path dist/legal/cargo-inventory.json)) { throw ''Build has no dependency notices'' }
+    - name: Verify original package hashes and source revision
+      env:
+        BUILD_REVISION: ${{ inputs.build_revision }}
+      run: 'python -c ''import json,os,hashlib; from pathlib import Path; r=Path("SignOutput"); m=json.loads((r/"manifest.json").read_text());
+        assert m["revision"]==os.environ["BUILD_REVISION"] and m["signed"] is False and len(m["files"])==2; assert all((r/f["name"]).stat().st_size==f["bytes"]
+        and hashlib.sha256((r/f["name"]).read_bytes()).hexdigest()==f["sha256"] for f in m["files"])''
 
-        ./scripts/test_windows.ps1 -Bundle ./dist'
-    - name: Assemble portable EXE
-      shell: bash
-      run: 'sed -i ''/dpiAware/d'' res/manifest.xml
-
-        pushd libs/portable
-
-        pip3 install -r requirements.txt
-
-        python3 generate.py -f ../../dist/ -o . -e ../../dist/ZAVIXRemote.exe
-
-        popd
-
-        mkdir -p SignOutput
-
-        cp target/release/rustdesk-portable-packer.exe SignOutput/ZAVIXRemote-1.5.0.1.exe
-
-        '
+        if ($LASTEXITCODE -ne 0) { throw ''Original package verification failed'' }'
     - name: Test final portable executable
-      run: ./scripts/test_portable.ps1 -Executable ./SignOutput/ZAVIXRemote-1.5.0.1.exe
-    - name: Verify EXE and corresponding sources
-      run: 'python scripts/package_release.py
-
-        if ($LASTEXITCODE -ne 0) { throw ''Release verification failed'' }
+      run: './scripts/test_portable.ps1 -Executable ./SignOutput/ZAVIXRemote-1.5.0.1.exe
 
         Copy-Item build-provenance.json SignOutput/'
     - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
