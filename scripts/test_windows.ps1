@@ -24,7 +24,7 @@ try {
         $line = ($stdout -split "`n" | Where-Object { $_.Trim().StartsWith('{') } | Select-Object -Last 1)
         if (-not $line) { throw "No diagnostic JSON in runtime output: $stdout $stderr" }
         $data = $line | ConvertFrom-Json
-        if ($data.app_name -ne 'ZAVIXRemote' -or $data.server -ne '187.77.241.190' -or $data.relay -ne '187.77.241.190:21117' -or $data.api -ne 'https://remote.zavix.app' -or $data.approve_mode -ne 'click' -or $data.updater -ne 'N' -or -not $data.incoming_only) { throw 'Runtime configuration changed or is unsafe' }
+        if ($data.app_name -ne 'ZAVIXRemote' -or $data.server -ne '187.77.241.190:21116' -or $data.relay -ne '187.77.241.190:21117' -or $data.api -ne 'https://remote.zavix.app' -or $data.approve_mode -ne 'click' -or $data.updater -ne 'N' -or -not $data.incoming_only -or $data.filename_configuration) { throw 'Runtime configuration changed or is unsafe' }
         $results += @{case=$name;result='passed';configuration=$data}
         if ($name -ne 'ZAVIXRemote.exe') { Remove-Item $exePath }
     }

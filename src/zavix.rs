@@ -47,13 +47,13 @@ pub fn diagnostics_requested() -> bool {
             "product_name": brand.product_name,
             "version": brand.version,
             "base_version": crate::VERSION,
-            "server": config::Config::get_option("custom-rendezvous-server"),
+            "server": config::Config::get_rendezvous_server(),
             "relay": config::Config::get_option("relay-server"),
-            "api": config::Config::get_option("api-server"),
+            "api": crate::common::get_api_server(config::Config::get_option("api-server"), config::Config::get_option("custom-rendezvous-server")),
             "approve_mode": config::Config::get_option("approve-mode"),
             "updater": config::Config::get_option("allow-auto-update"),
             "incoming_only": config::is_incoming_only(),
-            "filename_configuration": false,
+            "filename_configuration": crate::platform::windows::get_license_from_exe_name().is_ok(),
             "signed": false
         })),
         Err(err) => {

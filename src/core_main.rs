@@ -35,12 +35,12 @@ pub fn core_main() -> Option<Vec<String>> {
     }
     crate::load_custom_client();
     #[cfg(windows)]
-    if crate::zavix::diagnostics_requested() {
+    if !crate::platform::windows::bootstrap() {
+        // return None to terminate the process
         return None;
     }
     #[cfg(windows)]
-    if !crate::platform::windows::bootstrap() {
-        // return None to terminate the process
+    if crate::zavix::diagnostics_requested() {
         return None;
     }
     let mut args = Vec::new();
