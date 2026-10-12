@@ -1,0 +1,195 @@
+# ZAVIX modifications, 2026-10-12: Windows only, no upstream signing or auto-publishing.
+name: ZAVIX Remote Windows
+'on':
+  workflow_dispatch: {}
+permissions:
+  contents: read
+env:
+  SCITER_RUST_VERSION: '1.75'
+  RUST_VERSION: '1.75'
+  LLVM_VERSION: 15.0.6
+  FLUTTER_VERSION: 3.24.5
+  VCPKG_BINARY_SOURCES: clear;x-gha,readwrite
+  VCPKG_COMMIT_ID: 9e593bb18ea69cc5095e012465dcd675a822ed0d
+  VCPKG_CMAKE_VERSION: 4.3.0
+  VERSION: 1.5.0.1
+  UPLOAD_ARTIFACT: 'true'
+  FLUTTER_WINDOWS_ARM_VERSION: 3.44.9
+jobs:
+  generate-bridge:
+    uses: ./.github/workflows/bridge.yml
+  build-RustDeskTempTopMostWindow:
+    uses: ./.github/workflows/third-party-RustDeskTempTopMostWindow.yml
+    with:
+      upload-artifact: true
+      target: windows-2022
+      configuration: Release
+      platform: x64
+      target_version: Windows10
+  build-for-windows-flutter:
+    name: ${{ matrix.job.target }}
+    needs:
+    - build-RustDeskTempTopMostWindow
+    - generate-bridge
+    runs-on: ${{ matrix.job.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        job:
+        - target: x86_64-pc-windows-msvc
+          os: windows-2022
+          arch: x86_64
+          flutter-arch: x64
+          vcpkg-triplet: x64-windows-static
+          build-args: --vram
+    steps:
+    - name: Export GitHub Actions cache environment variables
+      uses: actions/github-script@d7906e4ad0b1822421a7e6a35d5ca353c962f410
+      with:
+        script: 'core.exportVariable(''ACTIONS_CACHE_URL'', process.env.ACTIONS_CACHE_URL || '''');
+
+          core.exportVariable(''ACTIONS_RUNTIME_TOKEN'', process.env.ACTIONS_RUNTIME_TOKEN || '''');
+
+          '
+    - name: Checkout source code
+      uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+      with:
+        submodules: recursive
+    - name: Restore bridge files
+      uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+      with:
+        name: ${{ matrix.job.arch == 'aarch64' && 'bridge-artifact-flutter-3.44' || 'bridge-artifact' }}
+        path: ./
+    - name: Install LLVM and Clang
+      uses: KyleMayes/install-llvm-action@ebc0426251bc40c7cd31162802432c68818ab8f0
+      with:
+        version: ${{ env.LLVM_VERSION }}
+    - name: Install flutter
+      id: flutter
+      uses: subosito/flutter-action@2783a3f08e1baf891508463f8c6653c258246225
+      with:
+        channel: stable
+        flutter-version: ${{ matrix.job.arch == 'aarch64' && env.FLUTTER_WINDOWS_ARM_VERSION || env.FLUTTER_VERSION }}
+        architecture: x64
+    - name: Replace engine with rustdesk custom flutter engine
+      if: ${{ matrix.job.arch == 'x86_64' }}
+      run: 'flutter doctor -v
+
+        flutter precache --windows
+
+        Invoke-WebRequest -Uri https://api.github.com/repos/rustdesk/engine/releases/assets/210168939 -Headers @{Accept=''application/octet-stream''}
+        -OutFile windows-x64-release.zip
+
+        $actual = (Get-FileHash windows-x64-release.zip -Algorithm SHA256).Hash.ToLower()
+
+        if ($actual -ne ''ec8cabf36ee4ff24c8d98de25b00e70781eb03876265aee84d0fe554a110036e'') { throw ''Flutter engine hash
+        mismatch'' }
+
+        Expand-Archive -Path windows-x64-release.zip -DestinationPath windows-x64-release
+
+        Copy-Item -Force windows-x64-release/* ''${{ steps.flutter.outputs.CACHE-PATH }}/bin/cache/artifacts/engine/windows-x64-release/''
+
+        '
+    - name: Patch flutter
+      if: ${{ matrix.job.arch == 'x86_64' }}
+      shell: bash
+      run: "cp .github/patches/flutter_3.24.4_dropdown_menu_enableFilter.diff $(dirname $(dirname $(which flutter)))\ncd $(dirname\
+        \ $(dirname $(which flutter)))\nif [[ \"3.24.5\" == ${{env.FLUTTER_VERSION}} ]]; then\n  git apply flutter_3.24.4_dropdown_menu_enableFilter.diff\n\
+        fi\n"
+    - name: Install Rust toolchain
+      uses: dtolnay/rust-toolchain@e97e2d8cc328f1b50210efc529dca0028893a2d9
+      with:
+        toolchain: ${{ env.SCITER_RUST_VERSION }}
+        targets: ${{ matrix.job.target }}
+        components: rustfmt
+    - uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32
+      with:
+        prefix-key: ${{ matrix.job.os }}
+    - name: Setup vcpkg with Github Actions binary cache
+      uses: lukka/run-vcpkg@b1a0dd252f06b9e25b3c022a9a03bd7a427fb6a2
+      with:
+        vcpkgDirectory: C:\vcpkg
+        vcpkgGitCommitId: ${{ env.VCPKG_COMMIT_ID }}
+        doNotCache: false
+    - name: Install vcpkg dependencies
+      env:
+        VCPKG_DEFAULT_HOST_TRIPLET: ${{ matrix.job.vcpkg-triplet }}
+      run: "if ! $VCPKG_ROOT/vcpkg \\\n  install \\\n  --triplet ${{ matrix.job.vcpkg-triplet }} \\\n  --x-install-root=\"\
+        $VCPKG_ROOT/installed\"; then\n  find \"${VCPKG_ROOT}/\" -name \"*.log\" | while read -r _1; do\n    echo \"$_1:\"\
+        \n    echo \"======\"\n    cat \"$_1\"\n    echo \"======\"\n    echo \"\"\n  done\n  exit 1\nfi\nhead -n 100 \"${VCPKG_ROOT}/buildtrees/ffmpeg/build-${{\
+        \ matrix.job.vcpkg-triplet }}-rel-out.log\" || true\n"
+      shell: bash
+    - name: Validate ZAVIX configuration
+      run: python scripts/validate_config.py
+    - name: Build ZAVIX Windows
+      run: 'python .\build.py --portable --flutter --skip-portable-pack --hwcodec --vram
+
+        if ($LASTEXITCODE -ne 0) { throw ''Windows build failed'' }
+
+        Move-Item ./flutter/build/windows/x64/runner/Release ./dist
+
+        '
+    - name: Download RustDeskTempTopMostWindow artifacts
+      uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+      with:
+        name: ${{ matrix.job.arch == 'aarch64' && 'topmostwindow-artifacts-ARM64' || 'topmostwindow-artifacts-x64' }}
+        path: ./dist
+    - name: Verify runtime configuration and renaming protection
+      run: ./scripts/test_windows.ps1 -Bundle ./dist
+    - name: Package portable EXE
+      shell: bash
+      run: 'sed -i ''/dpiAware/d'' res/manifest.xml
+
+        pushd libs/portable
+
+        pip3 install -r requirements.txt
+
+        python3 generate.py -f ../../dist/ -o . -e ../../dist/ZAVIXRemote.exe
+
+        popd
+
+        mkdir -p SignOutput
+
+        cp target/release/rustdesk-portable-packer.exe SignOutput/ZAVIXRemote-1.5.0.1.exe
+
+        '
+    - name: Add MSBuild to PATH
+      uses: microsoft/setup-msbuild@6fb02220983dee41ce7ae257b6f4d8f9bf5ed4ce
+    - name: Build ZAVIX MSI
+      run: 'Push-Location res/msi
+
+        python preprocess.py --arp --revision-version 1 --app-name ZAVIXRemote --manufacturer ZAVIX -d ../../dist
+
+        if ($LASTEXITCODE -ne 0) { throw ''MSI preprocessing failed'' }
+
+        nuget restore msi.sln
+
+        if ($LASTEXITCODE -ne 0) { throw ''NuGet restore failed'' }
+
+        msbuild msi.sln -p:Configuration=Release -p:Platform=x64 /p:TargetVersion=Windows10
+
+        if ($LASTEXITCODE -ne 0) { throw ''MSI build failed'' }
+
+        $msi = Get-ChildItem ./Package/bin/*/Release/en-us/Package.msi | Select-Object -First 1
+
+        Copy-Item $msi.FullName ../../SignOutput/ZAVIXRemote-1.5.0.1.msi
+
+        Pop-Location
+
+        '
+    - name: Verify installer and source manifest
+      run: python scripts/package_release.py
+    - name: Upload ZAVIX Windows artifacts
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+      with:
+        name: zavix-windows-x64-unsigned
+        path: SignOutput/
+        if-no-files-found: error
+        retention-days: 14
+    - name: Upload installable bundle for diagnosis
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+      with:
+        name: zavix-windows-x64-bundle
+        path: dist/
+        retention-days: 7
+    timeout-minutes: 120
