@@ -50,6 +50,12 @@ try {
  $finish=Wait-Control $window 'Concluir e abrir'
  $serviceBefore=Get-CimInstance Win32_Service -Filter "Name='$app'"
  if($serviceBefore.State -ne 'Running' -or $serviceBefore.StartMode -ne 'Auto'){throw 'Service must start before Finish opens the app'}
+ $deadline=(Get-Date).AddSeconds(30)
+ do {
+  $server=Get-CimInstance Win32_Process | Where-Object {$_.ExecutablePath -eq $exe -and $_.CommandLine -match '--server'} | Select-Object -First 1
+  if($server){break};Start-Sleep -Milliseconds 500
+ } while((Get-Date)-lt $deadline)
+ if(-not $server){throw 'Service did not start its remote server before GUI launch'}
  Capture $process.MainWindowHandle 'installer-complete'
  Invoke-Control $finish
  $deadline=(Get-Date).AddSeconds(35)
@@ -66,7 +72,7 @@ try {
  $service=Get-CimInstance Win32_Service -Filter "Name='$app'"
  if($service.State -ne 'Running' -or $service.StartMode -ne 'Auto'){throw 'Automatic service is not running after interactive installation'}
  @{result='passed';product=$brand.product_name;version=$brand.version;application_window=$client.MainWindowTitle;
- finish_opens_application=$true;launch_user=$owner.User;service_before_finish=$serviceBefore.State;service=$service.State;service_start=$service.StartMode;environment='Windows Server 2022 x64 CI; interactive installer UI';
+ finish_opens_application=$true;launch_user=$owner.User;service_before_finish=$serviceBefore.State;server_before_finish=$true;service=$service.State;service_start=$service.StartMode;environment='Windows Server 2022 x64 CI; interactive installer UI';
  screenshots=@('installer-welcome.png','installer-complete.png','installed-app.png')} | ConvertTo-Json | Set-Content UniversalOutput/installer-ui-evidence.json
 } finally {
  Get-CimInstance Win32_Process | Where-Object {$_.ExecutablePath -eq $exe -and $_.CommandLine -notmatch '--service|--server|--cm'} | ForEach-Object {Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue}
