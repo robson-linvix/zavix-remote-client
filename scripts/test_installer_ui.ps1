@@ -1,4 +1,4 @@
-param([Parameter(Mandatory=$true)][string]$Installer)
+﻿param([Parameter(Mandatory=$true)][string]$Installer)
 $ErrorActionPreference='Stop'
 Add-Type -AssemblyName UIAutomationClient,UIAutomationTypes,System.Drawing
 Add-Type @'
