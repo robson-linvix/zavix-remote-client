@@ -88,6 +88,9 @@ exit 0
 '''
     for name,text in [('preinstall',pre),('postinstall',post)]:
         p=scripts/name;p.write_text(text);p.chmod(0o755)
+    # Finder can add cosmetic bundle metadata while extracting frameworks.
+    for attribute in ['com.apple.FinderInfo','com.apple.ResourceFork']:
+        subprocess.run(['xattr','-r','-d',attribute,str(app)],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
     subprocess.run(['bash',str(ROOT/'.github/scripts/sign-macos-app.sh'),str(app),'-',str(ROOT/'flutter/macos/Runner/Release.entitlements')],check=True)
     run('codesign','--force','--options','runtime','--sign','-','--identifier',left['bundle_id'],'--generate-entitlement-der','--entitlements',ROOT/'flutter/macos/Runner/Release.entitlements',app)
     run('codesign','--verify','--deep','--strict',app)
