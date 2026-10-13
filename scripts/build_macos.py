@@ -44,7 +44,8 @@ def build(native,out,edition):
         merged.append(str(relative))
     assert len(merged)>=3 and f'Contents/MacOS/{app_name}' in merged and 'Contents/MacOS/service' in merged
     info=plistlib.loads((app/'Contents/Info.plist').read_bytes())
-    assert info['CFBundleIdentifier']==left['bundle_id'] and info['CFBundleExecutable']==app_name
+    assert info['CFBundleIdentifier'] in [left['bundle_id'],'com.carriez.rustdesk'] and info['CFBundleExecutable']==app_name
+    info['CFBundleIdentifier']=left['bundle_id']
     assert info.get('CFBundleDisplayName')==left['product']
     info['LSMinimumSystemVersion']='11.0';info['LSArchitecturePriority']=['arm64','x86_64']
     (app/'Contents/Info.plist').write_bytes(plistlib.dumps(info))
@@ -88,6 +89,8 @@ exit 0
     for name,text in [('preinstall',pre),('postinstall',post)]:
         p=scripts/name;p.write_text(text);p.chmod(0o755)
     subprocess.run(['bash',str(ROOT/'.github/scripts/sign-macos-app.sh'),str(app),'-',str(ROOT/'flutter/macos/Runner/Release.entitlements')],check=True)
+    run('codesign','--force','--options','runtime','--sign','-','--identifier',left['bundle_id'],'--generate-entitlement-der','--entitlements',ROOT/'flutter/macos/Runner/Release.entitlements',app)
+    run('codesign','--verify','--deep','--strict',app)
     component=stage/'component.pkg';identifier=left['bundle_id']+'.installer'
     run('pkgbuild','--root',payload,'--scripts',scripts,'--identifier',identifier,'--version',left['version'],'--install-location','/',component)
     distribution=stage/'Distribution.xml'

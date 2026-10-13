@@ -20,6 +20,8 @@ try:
     assert info['CFBundleIdentifier']==manifest['bundle_id'] and info['CFBundleDisplayName']==manifest['product']
     assert set(command('lipo','-archs',exe).stdout.split())=={'x86_64','arm64'}
     command('codesign','--verify','--deep','--strict',app)
+    signed_identity=command('codesign','-d','--verbose=2',app).stderr
+    assert 'Identifier='+manifest['bundle_id'] in signed_identity
     runtime=command(exe,'--zavix-diagnostics')
     data=json.loads(next(line for line in reversed(runtime.stdout.splitlines()) if line.startswith('{')))
     assert data['app_name']==app_name and data['product_name']==manifest['product'] and data['version']==manifest['version'] and data['installed']
