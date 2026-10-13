@@ -46,7 +46,7 @@ def build(bundle, output, wix, fixture=False, arch='x64'):
     node(package,'Property',Id='WIXUI_EXITDIALOGOPTIONALCHECKBOX',Value='1')
     node(package,'Property',Id='WIXUI_EXITDIALOGOPTIONALTEXT',Value='Informe seu ID ao atendente e aceite a solicitação no aplicativo.')
     node(package,'Property',Id='WixShellExecTarget',Value='[#AppExe]')
-    node(package,'CustomAction',Id='LaunchClient',BinaryRef='Wix4UtilCA_'+arch, DllEntry='WixShellExec',Impersonate='yes',Return='check')
+    node(package,'CustomAction',Id='LaunchClient',BinaryRef='Wix4UtilCA_'+arch.upper(), DllEntry='WixShellExec',Impersonate='yes',Return='check')
     finish=node(package,'UI')
     node(finish,'Publish',Dialog='ExitDialog',Control='Finish',Event='DoAction',Value='LaunchClient',Order='1',Condition='WIXUI_EXITDIALOGOPTIONALCHECKBOX = 1 AND NOT Installed')
     node(package,'WixVariable',Id='WixUILicenseRtf',Value=str(ROOT/'res/zavix-msi/License.rtf'))
