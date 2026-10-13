@@ -16,7 +16,12 @@ def prepare(edition):
  brand=json.loads((ROOT/'branding/linvix.json').read_text());assert brand['app_name']=='LinvixRemote' and brand['product_name']=='Linvix Remote'
  assert json.loads((ROOT/'branding/zavix.json').read_text())['app_name']=='ZAVIXRemote','Use a clean checkout for each brand'
  for name in FILES:
-  p=ROOT/name;s=p.read_text();s=s.replace('ZAVIXRemote','LinvixRemote').replace('ZAVIX Remote','Linvix Remote')
+  p=ROOT/name;s=p.read_text()
+  if name=='flutter/windows/runner/Runner.rc':
+   s=s.replace('VALUE "CompanyName", "ZAVIX"', 'VALUE "CompanyName", "LINVIX SOFTWARES LTDA"')
+  if name=='flutter/lib/desktop/pages/desktop_setting_page.dart':
+   s=s.replace('ZAVIX Remote 1.5.0.1', 'Linvix Remote '+brand['version']).replace('Modificações ZAVIX © 2026', 'Modificações LINVIX © 2026')
+  s=s.replace('ZAVIXRemote','LinvixRemote').replace('ZAVIX Remote','Linvix Remote')
   s=s.replace('A3F6A58C-1994-4DA7-909D-380DE3D52BB9','51B0F725-6EC7-4182-9CFD-544510B9881C')
   s=s.replace('5F8EA9B9-D7D4-44A4-9A18-2C54010A4E3F','4D0D41CF-FC23-4E69-AF03-957A57A958DF')
   p.write_text(s)
