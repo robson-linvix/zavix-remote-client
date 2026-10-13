@@ -124,6 +124,7 @@ android {
         }
         store {
             dimension "distribution"
+            signingConfig signingConfigs.release
         }
     }
 
@@ -132,7 +133,6 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules'
         }
     }
-    productFlavors.store.signingConfig = signingConfigs.release
 
     sourceSets.main.res.srcDir(layout.buildDirectory.dir("generated/zavix-res"))
 }

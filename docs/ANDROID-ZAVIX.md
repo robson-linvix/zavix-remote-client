@@ -123,6 +123,11 @@ validado. Compilação completa em andamento na execução
 `38328301290`; nenhuma conclusão de compatibilidade ou APK pronto pode ser
 inferida desses testes estáticos. A primeira execução `38328227765` foi cancelada
 por esta frente para incorporar a main Windows atual antes de continuar.
+Nessa execução, o cliente Rust ARM64 compilou; a avaliação Gradle falhou ao
+resolver `productFlavors.store.signingConfig`. A configuração de assinatura foi
+movida para o bloco do flavor `store`, sem mudar a chave nem o perfil de piloto.
+Nova compilação necessária para confirmar a correção. O proprietário informou
+dificuldade de login SUNMI; consultar o portal mais tarde, sem insistir no acesso.
 
 Antes da loja: chave definitiva protegida e backup, Play App Signing, package
 confirmado, AAB de release validado, privacidade pública e dentro do app,
