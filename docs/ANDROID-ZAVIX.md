@@ -41,6 +41,31 @@ Main Windows avançou separadamente a `36ff952`/1.5.0.4; a branch Android conser
 baseline `19b1c49` sem modificá-lo. Não promover essa branch sobre main sem integrar
 os avanços Windows e validar novamente; nenhum build Windows foi tocado.
 
+ARM64 concluído na mesma execução/source (attempt2), sem recompilar ARMv7:
+`ZAVIXRemote-1.0.0-piloto-arm64-v8a.apk`, 72.213.118 bytes,
+SHA256 `1e946eb6d21bf113834f6476a1d3af6664d44e2bb045e7f4865a33006a081d45`.
+Fontes SHA256 `cbcc2fb638a7faa8705f8dbc9a0457931fac9d092b5f8072b0f79706253e2be0`.
+Hashes locais passaram; aapt do CI confirma code2001, versão1.0.0-piloto, min24,
+target36, package/label iguais e ABIarm64-v8a. apksigner no CI verificou v2,
+certificado Android Debug SHA256
+`58b33005b107090e7006d4167091dd2f72bd76a552606a77a248e7f545cb38dc`.
+As quatro libs são ELF64 AArch64; perfil/inicializador no pacote de fontes iguais
+ao commit compilado. Ambos APKs/fontes preservados em diretórios de saída separados.
+Os certificados de desenvolvimento ARMv7/ARM64 diferem: não são um par de atualização
+compatível nem chave de produção. Não substituir uma variante pela outra como atualização.
+
+Conferência binária ARM64: todas as libs têm PT_LOAD com alinhamento >=16KB e dados
+ZIP sem compressão com offset múltiplo de16KB. libapp/libflutter usam64KB;
+libc++_shared/librustdesk usam16KB. Entretanto o fim de GNU_RELRO de libc++_shared
+fica com resto8192 em módulo16384; as demais passam ou não possuem RELRO.
+Isso impede declarar compatibilidade completa16KB: analisar/reconstruir essa dependência
+e validar em ambiente16KB antes de loja/aparelhos recentes. Não editar binário nem
+desativar proteção para mascarar a divergência. Não impede por si só o piloto4KB
+Android antigo, mas nenhuma compatibilidade de aparelho real foi comprovada.
+Critério da conferência: [Android — alinhamento e RELRO](https://developer.android.com/guide/practices/page-sizes).
+Compilações encerradas; próximos passos exigem teste do terminal/firmware, assinatura
+estável e provisionamento explicitamente autorizado para acesso não supervisionado.
+
 - Package de produção proposto: `app.zavix.remote` (não registrado na loja).
 - Piloto: `app.zavix.remote.pilot`, coexistente com o RustDesk original e com a
   futura versão de produção. Nome visível ZAVIX Remote; versionName de piloto.
