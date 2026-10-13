@@ -80,7 +80,10 @@ try {
   if($client){break};Start-Sleep -Milliseconds 500
  } while((Get-Date)-lt $deadline)
  if(-not $client){throw 'Finishing the installer did not open the application'}
- if($client.MainWindowTitle -ne $brand.product_name){throw 'Application caption must use the product name with spaces'}
+ Start-Sleep -Seconds 3
+ $client.Refresh()
+ Capture $client.MainWindowHandle 'installed-app'
+ if($client.MainWindowTitle -ne $brand.product_name){throw "Application caption differs: '$($client.MainWindowTitle)' expected '$($brand.product_name)'"}
  $second=Start-Process $exe -PassThru
  if(-not $second.WaitForExit(15000)){Stop-Process -Id $second.Id -Force;throw 'Reopening created a duplicate application window'}
  $clientProcess=Get-CimInstance Win32_Process -Filter "ProcessId=$($client.Id)"
