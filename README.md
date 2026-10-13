@@ -8,7 +8,7 @@ ZAVIX Remote is a maintained derivative of [RustDesk OSS](https://github.com/rus
 - [Code signing policy](CODE_SIGNING_POLICY.md)
 - [Privacy and third-party notices](PRIVACY.md)
 
-The released Windows client is unsigned. A SignPath Foundation application is being prepared; no sponsorship or signing approval has been granted. The project is new and has no established public adoption record. Dependency-license questions are disclosed in [THIRD-PARTY-LICENSES.md](THIRD-PARTY-LICENSES.md).
+The released Windows client is unsigned. A SignPath Foundation application was submitted on 12 October 2026 and is awaiting assessment; no sponsorship or signing approval has been granted. The project is new and has no established public adoption record. Dependency-license questions are disclosed in [THIRD-PARTY-LICENSES.md](THIRD-PARTY-LICENSES.md).
 
 Upstream base: RustDesk 1.5.0, commit `fada664df7a294d1d1a9ca3e7cd3637069122f17`; shared submodule `hbb_common` at `229b904508364c8997aad0fb5af57effac859f60`. The upstream README follows unchanged.
 

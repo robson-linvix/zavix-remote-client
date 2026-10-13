@@ -2,7 +2,7 @@
 
 ## Current status
 
-As of 12 October 2026, ZAVIX Remote 1.5.0.1 is unsigned. We are preparing an application to SignPath Foundation. No account, certificate assignment, approval or signed ZAVIX release exists yet. Signing will remain disabled until eligibility, dependency licensing and release verification are complete.
+As of 12 October 2026, ZAVIX Remote 1.5.0.1 is unsigned. An application to SignPath Foundation was submitted on 12 October 2026; the form confirmed receipt. No active signing account, certificate assignment, sponsorship approval or signed ZAVIX release has been confirmed. Signing will remain disabled until eligibility, dependency licensing and release verification are complete.
 
 The requested attribution, if sponsorship is approved, will be:
 
