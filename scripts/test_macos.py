@@ -33,6 +33,17 @@ try:
     for kind,folder in [('service','LaunchDaemons'),('server','LaunchAgents')]:
         plist=plistlib.loads((Path('/Library')/folder/(labels[kind]+'.plist')).read_bytes())
         assert plist['RunAtLoad'] and plist['AssociatedBundleIdentifiers']==manifest['bundle_id']
+    command('/usr/bin/open','-n','-a',app)
+    deadline=time.monotonic()+20
+    gui=False
+    while time.monotonic()<deadline:
+        processes=command('/bin/ps','-axo','pid=,command=').stdout.splitlines()
+        gui=any(str(exe) in line and not any(flag in line for flag in ['--server','--cm','--tray','--zavix-diagnostics']) for line in processes)
+        if gui:break
+        time.sleep(1)
+    assert gui,'Installed Flutter application did not remain running'
+    time.sleep(5)
+    assert any(str(exe) in line and not any(flag in line for flag in ['--server','--cm','--tray','--zavix-diagnostics']) for line in command('/bin/ps','-axo','pid=,command=').stdout.splitlines())
     # Tampered external configuration never overrides the compiled assisted profile.
     custom=app/'Contents/Resources/custom.txt'
     command('sudo','/bin/sh','-c','printf %s hostile-external-config > "$1"','test',custom)
@@ -41,7 +52,7 @@ try:
         assert second==data
     finally:command('sudo','/bin/rm',custom)
     command('codesign','--verify','--deep','--strict',app)
-    result.update({'result':'passed','configuration':data,'service':'running','launchd_run_at_load':True,'universal_macho':'passed','external_configuration':'ignored','screen_control_permissions':'require client approval; not granted by test'})
+    result.update({'result':'passed','configuration':data,'service':'running','gui_startup':'passed','launchd_run_at_load':True,'universal_macho':'passed','external_configuration':'ignored','screen_control_permissions':'require client approval; not granted by test'})
 finally:
     command('sudo','launchctl','bootout','system/'+labels['service'],check=False)
     command('sudo','launchctl','bootout','gui/'+console_uid+'/'+labels['server'],check=False)
