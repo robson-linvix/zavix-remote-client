@@ -1,5 +1,5 @@
 <resources>
     <string name="app_name">ZAVIX Remote</string>
     <string name="accessibility_service_description">Permite ao atendente autorizado visualizar elementos da tela e executar toques, rolagem e digitação durante uma assistência ZAVIX Remote. Habilite apenas quando desejar receber controle remoto.</string>
-    <string name="foreground_service_special_use_subtype">Mantém disponível o atendimento remoto iniciado pelo usuário, com notificação visível, sem capturar a tela antes de sua autorização e sem iniciar no boot.</string>
+    <string name="foreground_service_special_use_subtype">Mantém disponível o acesso remoto autorizado ao equipamento administrado, com notificação visível e senha individual. Captura e controle exigem permissões iniciais; retorno após reinício depende de configuração e autorização do Android.</string>
 </resources>

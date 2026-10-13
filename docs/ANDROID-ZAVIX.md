@@ -16,7 +16,7 @@ Assinatura de teste estável PKCS12, com chave privada criptografada fora do Git
 
 ### Ordem do teste
 
-1. Instalar o novo aplicativo e abrir **ZAVIX Remote T2 Mini (teste)**. Encerrar o APK anterior para evitar disputa de captura.
+1. Parar o serviço do APK anterior ou usar **Forçar parada** nas configurações do Android; fechar a janela pode manter o serviço ativo. Instalar e abrir **ZAVIX Remote T2 Mini (teste)** para evitar disputa de captura.
 2. Definir senha exclusiva (mínimo 12 caracteres), copiar o ID exibido no painel e habilitar Controle de Entrada nas configurações do Android. Esses passos podem usar o visualizador SUNMI.
 3. No portal, cadastrar esse ID e configurar o dispositivo como não supervisionado, com a mesma senha e autorização. Associar à integração CRM quando aplicável.
 4. Preparar a captura; lembrar a autorização se o firmware apresentar essa opção. A assistência SUNMI pode congelar ao entregar a captura ao ZAVIX. Continuar pelo dispositivo cadastrado no CRM/portal, no modo não supervisionado.
