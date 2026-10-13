@@ -11,12 +11,12 @@ FILES=['Cargo.toml','src/zavix.rs','src/ui.rs','src/ui/cm.tis','src/ui/index.tis
  'res/zavix-bundle/pt-BR.wxl','res/zavix-msi/License.rtf']
 def prepare(edition):
  if edition=='zavix':
-  assert json.loads((ROOT/'branding/zavix.json').read_text())['app_name']=='ZAVIXRemote'
+  assert json.loads((ROOT/'branding/zavix.json').read_text(encoding='utf-8'))['app_name']=='ZAVIXRemote'
   return
- brand=json.loads((ROOT/'branding/linvix.json').read_text());assert brand['app_name']=='LinvixRemote' and brand['product_name']=='Linvix Remote'
- assert json.loads((ROOT/'branding/zavix.json').read_text())['app_name']=='ZAVIXRemote','Use a clean checkout for each brand'
+ brand=json.loads((ROOT/'branding/linvix.json').read_text(encoding='utf-8'));assert brand['app_name']=='LinvixRemote' and brand['product_name']=='Linvix Remote'
+ assert json.loads((ROOT/'branding/zavix.json').read_text(encoding='utf-8'))['app_name']=='ZAVIXRemote','Use a clean checkout for each brand'
  for name in FILES:
-  p=ROOT/name;s=p.read_text()
+  p=ROOT/name;s=p.read_text(encoding='utf-8')
   if name=='flutter/windows/runner/Runner.rc':
    s=s.replace('VALUE "CompanyName", "ZAVIX"', 'VALUE "CompanyName", "LINVIX SOFTWARES LTDA"')
   if name=='flutter/lib/desktop/pages/desktop_setting_page.dart':
@@ -24,14 +24,14 @@ def prepare(edition):
   s=s.replace('ZAVIXRemote','LinvixRemote').replace('ZAVIX Remote','Linvix Remote')
   s=s.replace('A3F6A58C-1994-4DA7-909D-380DE3D52BB9','51B0F725-6EC7-4182-9CFD-544510B9881C')
   s=s.replace('5F8EA9B9-D7D4-44A4-9A18-2C54010A4E3F','4D0D41CF-FC23-4E69-AF03-957A57A958DF')
-  p.write_text(s)
+  p.write_text(s,encoding='utf-8')
  shutil.copyfile(ROOT/'branding/linvix.json',ROOT/'branding/zavix.json')
  for name in ['res/icon.ico','res/tray-icon.ico','flutter/assets/icon.ico','flutter/windows/runner/resources/app_icon.ico']:
   shutil.copyfile(ROOT/'branding/linvix/icon.ico',ROOT/name)
  shutil.copyfile(ROOT/'branding/linvix/icon.png',ROOT/'branding/zavix-icon.png')
  # Preserve original upstream copyright and notices; identify the selected edition explicitly.
  for name in ['NOTICE-ZAVIX.md','PRIVACY.md']:
-  p=ROOT/name;p.write_text('Edição Linvix Remote — LINVIX SOFTWARES LTDA. Usa a infraestrutura ZAVIX Remote.\n\n'+p.read_text())
+  p=ROOT/name;p.write_text('Edição Linvix Remote — LINVIX SOFTWARES LTDA. Usa a infraestrutura ZAVIX Remote.\n\n'+p.read_text(encoding='utf-8'),encoding='utf-8')
  print('Linvix Remote: native app, Windows resources, own service/MSI/bundle identity and icon selected')
 if __name__=='__main__':
  p=argparse.ArgumentParser();p.add_argument('edition',choices=['zavix','linvix']);prepare(p.parse_args().edition)

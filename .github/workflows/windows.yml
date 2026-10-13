@@ -11,6 +11,7 @@ name: ZAVIX Remote Windows
 permissions:
   contents: read
 env:
+  PYTHONUTF8: '1'
   SCITER_RUST_VERSION: '1.75'
   RUST_VERSION: '1.75'
   LLVM_VERSION: 15.0.6
