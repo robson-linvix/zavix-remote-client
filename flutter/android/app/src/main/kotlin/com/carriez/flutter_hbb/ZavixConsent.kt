@@ -2,9 +2,18 @@ package com.carriez.flutter_hbb
 
 import android.app.Activity
 import android.app.AlertDialog
+import android.content.Context
+import android.os.Build
 
 object ZavixConsent {
     fun screen(activity: Activity, accept: () -> Unit, cancel: () -> Unit) {
+        if (BuildConfig.ZAVIX_MANAGED && Build.VERSION.SDK_INT <= Build.VERSION_CODES.P &&
+            activity.intent.getBooleanExtra(EXT_INIT_FROM_BOOT, false) &&
+            activity.getSharedPreferences(KEY_SHARED_PREFERENCES, Context.MODE_PRIVATE)
+                .getBoolean(KEY_START_ON_BOOT_OPT, false)) {
+            accept()
+            return
+        }
         AlertDialog.Builder(activity)
             .setTitle("Preparar captura para o ZAVIX Remote?")
             .setMessage("Autorize a captura inicial do equipamento. O acesso remoto utilizará a senha individual configurada neste aparelho. A captura pode encerrar outra assistência ativa, incluindo a SUNMI: conclua a configuração e teste somente o ZAVIX. Na próxima tela, confirme a permissão do Android; se houver a opção de lembrar a autorização, ela pode ser usada para o equipamento administrado. A gravação permanece desligada.")
