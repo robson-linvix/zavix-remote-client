@@ -84,7 +84,7 @@ console_user=$(/usr/bin/stat -f %Su /dev/console)
 console_uid=$(/usr/bin/stat -f %u /dev/console)
 if [ "$console_uid" -ge 500 ] && [ "$console_user" != loginwindow ]; then
   /bin/launchctl bootstrap gui/"$console_uid" "$agent" || true
-  /bin/launchctl asuser "$console_uid" /usr/bin/sudo -u "$console_user" /usr/bin/open -n -a /Applications/{app_name}.app || true
+  /bin/launchctl asuser "$console_uid" /usr/bin/sudo -u "$console_user" /usr/bin/open -n -a /Applications/{app_name}.app --args --no-server || true
 fi
 exit 0
 '''
