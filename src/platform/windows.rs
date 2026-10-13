@@ -2752,6 +2752,7 @@ pub fn send_message_to_hnwd(
 ) -> bool {
     unsafe {
         let class_name_utf16 = wide_string(class_name);
+        let window_name = if crate::get_app_name() == "ZAVIXRemote" && window_name == "ZAVIXRemote" { "ZAVIX Remote" } else { window_name };
         let window_name_utf16 = wide_string(window_name);
         let window = FindWindowW(class_name_utf16.as_ptr(), window_name_utf16.as_ptr());
         if window.is_null() {

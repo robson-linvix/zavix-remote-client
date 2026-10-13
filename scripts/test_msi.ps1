@@ -21,9 +21,14 @@ function Check-Installed {
     $data = Get-Content runtime-installed.json | ConvertFrom-Json
     if (-not $data.installed -or $data.architecture -ne $Architecture -or $data.approve_mode -ne 'click' -or $data.server -ne '187.77.241.190:21116' -or $data.api -ne 'https://remote.zavix.app' -or $data.version -ne $brand.version) { throw 'Installed native configuration or detection differs' }
     $service = Get-CimInstance Win32_Service -Filter "Name='$app'"
-    if ($service.State -ne 'Running' -or $service.StartName -ne 'LocalSystem' -or $service.PathName -notlike "*$exe*--service*") { throw 'Installed service did not start with the intended binary' }
+    if ($service.StartMode -ne 'Auto' -or $service.State -ne 'Running' -or $service.StartName -ne 'LocalSystem' -or $service.PathName -notlike "*$exe*--service*") { throw 'Installed service did not start with the intended binary' }
     if (-not (Test-Path (Join-Path ([Environment]::GetFolderPath('CommonDesktopDirectory')) 'ZAVIX Remote.lnk'))) { throw 'Desktop shortcut missing' }
     if (-not (Test-Path (Join-Path $env:ProgramData 'Microsoft\Windows\Start Menu\Programs\ZAVIX Remote.lnk'))) { throw 'Start menu shortcut missing' }
+    $shell = New-Object -ComObject WScript.Shell
+    foreach ($shortcut in @((Join-Path $env:ProgramData 'Microsoft\Windows\Start Menu\Programs\ZAVIX Remote.lnk'), (Join-Path $env:ProgramData 'Microsoft\Windows\Start Menu\Programs\Startup\ZAVIX Remote Tray.lnk'))) {
+        $link = $shell.CreateShortcut($shortcut)
+        if ($link.TargetPath -ne $exe -or $link.IconLocation -notmatch ',0$') { throw "Shortcut target/icon differs: $shortcut" }
+    }
     $script:evidence += @{case='installed runtime and service';result='passed';runtime=$data;service=@{name=$service.Name;state=$service.State;account=$service.StartName}}
 }
 if (Test-Path $stateKey) { throw 'The test runner already contains a ZAVIX installation' }
