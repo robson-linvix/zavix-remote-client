@@ -2,8 +2,10 @@
 
 ## Estado em 12/10/2026
 
-Preparação de código em `codex/android-pilot-20261012`, baseada na main
-`6363cae`. Não publicado no Google Play, não homologado em aparelho real.
+Preparação de código em `codex/android-pilot-20261012`, inicialmente baseada
+em `6363cae` e atualizada com a main `19b1c49`, preservando integralmente o
+MSI e a aprovação assistida da outra frente. Não publicado no Google Play,
+não homologado em aparelho real.
 O proprietário autorizou iniciar a versão Android e informou SUNMI D2 Mini
 com Play Store como primeiro equipamento. Confirmar versão do Android,
 arquitetura, firmware e possibilidade de habilitar acessibilidade nesse aparelho.
@@ -73,8 +75,9 @@ atendimento não está implementada nesse piloto.
 
 Conta empresarial da Linvix Softwares: cadastro iniciado na sessão do
 proprietário, pendente de D-U-N-S. Dados empresariais não são guardados neste
-repositório público. Solicitação gratuita do D-U-N-S autorizada pelo proprietário;
-acompanhar no canal oficial, sem contratar emissão acelerada ou serviços pagos.
+repositório público. Solicitação gratuita do D-U-N-S autorizada pelo proprietário.
+Depois, autorizou consultar o preço de emissão acelerada no canal oficial,
+sem contratar. Nenhum serviço pago ou inscrição Google Play foi contratado.
 
 Antes da loja: chave definitiva protegida e backup, Play App Signing, package
 confirmado, AAB de release validado, privacidade pública e dentro do app,
