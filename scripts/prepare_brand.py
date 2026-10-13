@@ -4,7 +4,7 @@ import argparse,json,shutil
 ROOT=Path(__file__).resolve().parents[1]
 FILES=['Cargo.toml','src/platform/windows.rs','src/zavix.rs','src/ui.rs','src/ui/cm.tis','src/ui/index.tis',
  'flutter/windows/CMakeLists.txt','flutter/windows/runner/Runner.rc','flutter/windows/runner/main.cpp',
- 'flutter/lib/desktop/pages/desktop_home_page.dart','flutter/lib/desktop/pages/server_page.dart',
+ 'flutter/lib/common.dart','flutter/lib/desktop/pages/desktop_home_page.dart','flutter/lib/desktop/pages/server_page.dart',
  'flutter/lib/desktop/pages/desktop_setting_page.dart','flutter/lib/desktop/widgets/tabbar_widget.dart',
  'scripts/build_msi.py','scripts/build_bundle.py','scripts/package_release.py','scripts/validate_config.py',
  'scripts/test_windows.ps1','scripts/test_msi.ps1','scripts/test_bundle.ps1','scripts/test_sciter_startup.ps1','scripts/test_installer_ui.ps1',

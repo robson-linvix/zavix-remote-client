@@ -78,6 +78,9 @@ try {
   if($client){break};Start-Sleep -Milliseconds 500
  } while((Get-Date)-lt $deadline)
  if(-not $client){throw 'Finishing the installer did not open the application'}
+ if($client.MainWindowTitle -ne $brand.product_name){throw 'Application caption must use the product name with spaces'}
+ $second=Start-Process $exe -PassThru
+ if(-not $second.WaitForExit(15000)){Stop-Process -Id $second.Id -Force;throw 'Reopening created a duplicate application window'}
  $clientProcess=Get-CimInstance Win32_Process -Filter "ProcessId=$($client.Id)"
  $owner=Invoke-CimMethod -InputObject $clientProcess -MethodName GetOwner
  if($owner.User -ne $env:USERNAME){throw 'Finish must open the app as the interactive installer user'}
@@ -86,7 +89,7 @@ try {
  $service=Get-CimInstance Win32_Service -Filter "Name='$app'"
  if($service.State -ne 'Running' -or $service.StartMode -ne 'Auto'){throw 'Automatic service is not running after interactive installation'}
  @{result='passed';product=$brand.product_name;version=$brand.version;application_window=$client.MainWindowTitle;legacy_window=$legacyTitle;
- finish_opens_application=$true;launch_user=$owner.User;service_before_finish=$serviceBefore.State;server_before_finish=$true;service=$service.State;service_start=$service.StartMode;environment='Windows Server 2022 x64 CI; interactive installer UI';
+ finish_opens_application=$true;single_main_window=$true;launch_user=$owner.User;service_before_finish=$serviceBefore.State;server_before_finish=$true;service=$service.State;service_start=$service.StartMode;environment='Windows Server 2022 x64 CI; interactive installer UI';
  screenshots=@('installed-app-x86.png','installer-welcome.png','installer-complete.png','installed-app.png')} | ConvertTo-Json | Set-Content UniversalOutput/installer-ui-evidence.json
 } finally {
  Get-CimInstance Win32_Process | Where-Object {$_.ExecutablePath -eq $exe -and $_.CommandLine -notmatch '--service|--server|--cm'} | ForEach-Object {Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue}
