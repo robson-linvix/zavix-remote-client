@@ -98,9 +98,8 @@ android {
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId "com.carriez.flutter_hbb"
-        minSdkVersion 22
+        applicationId "app.zavix.remote"
+        minSdkVersion 24
         targetSdkVersion 36
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
@@ -115,15 +114,35 @@ android {
       }
     }
 
+    flavorDimensions "distribution"
+    productFlavors {
+        pilot {
+            dimension "distribution"
+            applicationIdSuffix ".pilot"
+            versionNameSuffix "-piloto"
+            signingConfig signingConfigs.debug
+        }
+        store {
+            dimension "distribution"
+        }
+    }
+
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig signingConfigs.release
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules'
         }
     }
+    productFlavors.store.signingConfig = signingConfigs.release
+
+    sourceSets.main.res.srcDir(layout.buildDirectory.dir("generated/zavix-res"))
 }
+
+def generateZavixAndroidIcon = tasks.register("generateZavixAndroidIcon", Copy) {
+    from(rootProject.file("../../res/icon.png"))
+    into(layout.buildDirectory.dir("generated/zavix-res/drawable"))
+    rename { "zavix_logo.png" }
+}
+tasks.named("preBuild").configure { dependsOn(generateZavixAndroidIcon) }
 
 flutter {
     source '../..'

@@ -310,7 +310,12 @@ class MainActivity : FlutterActivity() {
                 }
                 START_ACTION -> {
                     if (call.arguments is String) {
-                        startAction(context, call.arguments as String)
+                        val action = call.arguments as String
+                        if (action == android.provider.Settings.ACTION_ACCESSIBILITY_SETTINGS) {
+                            ZavixConsent.control(this) { startAction(context, action) }
+                        } else {
+                            startAction(context, action)
+                        }
                         result.success(true)
                     } else {
                         result.success(false)
@@ -369,14 +374,13 @@ class MainActivity : FlutterActivity() {
                     result.success(true)
                 }
                 GET_START_ON_BOOT_OPT -> {
-                    val prefs = getSharedPreferences(KEY_SHARED_PREFERENCES, MODE_PRIVATE)
-                    result.success(prefs.getBoolean(KEY_START_ON_BOOT_OPT, false))
+                    result.success(false)
                 }
                 SET_START_ON_BOOT_OPT -> {
                     if (call.arguments is Boolean) {
                         val prefs = getSharedPreferences(KEY_SHARED_PREFERENCES, MODE_PRIVATE)
                         val edit = prefs.edit()
-                        edit.putBoolean(KEY_START_ON_BOOT_OPT, call.arguments as Boolean)
+                        edit.putBoolean(KEY_START_ON_BOOT_OPT, false)
                         edit.apply()
                         result.success(true)
                     } else {

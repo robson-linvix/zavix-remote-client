@@ -46,13 +46,20 @@ fn initialize(app_dir: &str, custom_client_config: &str) {
         *config::APP_DIR.write().unwrap() = app_dir.to_owned();
     }
     // core_main's load_custom_client does not work for flutter since it is only applied to its load_library in main.c
-    if custom_client_config.is_empty() {
-        crate::load_custom_client();
-    } else {
-        crate::read_custom_client(custom_client_config);
+    #[cfg(not(target_os = "android"))]
+    {
+        if custom_client_config.is_empty() {
+            crate::load_custom_client();
+        } else {
+            crate::read_custom_client(custom_client_config);
+        }
     }
     #[cfg(target_os = "android")]
     {
+        if let Err(err) = crate::zavix_android::initialize() {
+            eprintln!("ZAVIX Android configuration error: {}", err);
+            std::process::abort();
+        }
         // flexi_logger can't work when android_logger initialized.
         #[cfg(debug_assertions)]
         android_logger::init_once(

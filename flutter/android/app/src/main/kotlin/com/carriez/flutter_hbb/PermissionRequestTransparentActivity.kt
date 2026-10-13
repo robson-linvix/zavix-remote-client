@@ -18,6 +18,7 @@ class PermissionRequestTransparentActivity: Activity() {
 
         when (intent.action) {
             ACT_REQUEST_MEDIA_PROJECTION -> {
+                ZavixConsent.screen(this, {
                 val mediaProjectionManager =
                     getSystemService(MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
                 val intent = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
@@ -28,6 +29,11 @@ class PermissionRequestTransparentActivity: Activity() {
                     mediaProjectionManager.createScreenCaptureIntent()
                 }
                 startActivityForResult(intent, REQ_REQUEST_MEDIA_PROJECTION)
+                }, {
+                    val receiver = intent.getParcelableExtra<ResultReceiver>(EXT_MEDIA_PROJECTION_RESULT_RECEIVER)
+                    if (receiver != null) receiver.send(RES_FAILED, null) else setResult(RES_FAILED)
+                    finish()
+                })
             }
             else -> finish()
         }
