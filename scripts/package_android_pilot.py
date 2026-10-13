@@ -27,10 +27,10 @@ with tarfile.open(source, "w:gz") as archive:
             archive.add(path, arcname="ZAVIXRemote-Android-source/" + name, recursive=False)
 files = apks + [source]
 manifest = {
-    "product": "ZAVIX Remote",
+    "product": "Zavix Remote Sunmi",
     "revision": revision,
     "package": "app.zavix.remote.pilot.t2mini",
-    "version": "1.2.1-piloto",
+    "version": "1.2.2-piloto",
     "default_mode": "unattended",
     "distribution": "pilot-only",
     "signing": "stable-protected-test-key-not-for-google-play",

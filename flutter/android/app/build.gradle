@@ -130,7 +130,7 @@ android {
             dimension "distribution"
             applicationIdSuffix ".pilot.t2mini"
             versionNameSuffix "-piloto"
-            resValue "string", "app_name", "ZAVIX Remote T2 Mini (teste)"
+            resValue "string", "app_name", "Zavix Remote Sunmi"
             signingConfig signingConfigs.pilotManaged
         }
         store {

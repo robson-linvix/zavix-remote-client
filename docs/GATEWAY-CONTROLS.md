@@ -18,14 +18,20 @@ O pacote inclui libyuv e seu aviso de licença. Validar dependências no contain
 
 ## Provisionamento Android 1.1.1
 
-`ZavixProvisionReceiver` é uma entrada administrativa separada. O manifesto exige `android.permission.DUMP`, concedida ao shell/sistema e não a aplicativos comuns. A ação `app.zavix.remote.MDM_PREPARE` só funciona no piloto gerenciado, Android 7–9, após verificar captura (`PROJECT_MEDIA=allow`) e a acessibilidade específica do ZAVIX. Ela habilita o retorno após reinício e solicita captura pelo fluxo já existente do aplicativo. Não recebe, cria ou troca senha.
+`ZavixProvisionReceiver` é uma entrada administrativa separada. O manifesto exige `android.permission.DUMP`, concedida ao shell/sistema e não a aplicativos comuns. A ação `app.zavix.remote.MDM_PREPARE` só funciona no piloto gerenciado, Android 7–9, após verificar a acessibilidade específica do ZAVIX; a autorização de captura (`PROJECT_MEDIA=allow`) é conferida pelo script MDM e aplicada pelo próprio Android. Ela habilita o retorno após reinício e solicita captura pelo fluxo já existente do aplicativo. Não recebe, cria ou troca senha.
 
 Não entregar APK com senha comum. Atualização assinada preserva a senha individual e os dados do aparelho. Android mais recente retorna `unsupported_android`; requer homologação do fabricante/MDM e não recebe essas concessões automaticamente.
 
-## Cadastro automático 1.2.0
+## Cadastro automático SUNMI
 
 O receiver protegido recebe apenas um ticket efêmero por serial, nunca uma senha fixa. O APK lê série/modelo e se registra quando aberto; o servidor confere o ticket e vincula o cadastro ao ID remoto. Equipamentos existentes preservam suas credenciais. Equipamentos novos recebem senha individual, com confirmação antes de liberar a conexão. Uma chave individual no armazenamento interno sem backup atualiza presença/estados e permite os próprios diagnósticos; não administra outros dispositivos.
 
 Em Android 7, o serial é lido de `Build.SERIAL`. Em versões restritas, usa o serial conferido no MDM, recusando conflitos com o valor de hardware quando disponível. `MainActivity` possui dois hooks de canal para ler configuração e confirmar a chave; o novo módulo Flutter cuida do registro/heartbeat e sincronismo de senha. O painel só inclui estado/serial e inicia/encerra esse módulo. O diagnóstico acrescenta apenas o campo serial. Sem alteração no núcleo Rust ou nas APIs FFI existentes; APK 1.2.0/código 1005 reutiliza bibliotecas apenas após a verificação da mesma árvore Rust.
 
 Superfície adicional: `AndroidManifest.xml` registra apenas esse receiver com permissão administrativa; o restante do fluxo manual e de boot permanece intacto. Workflow Android passa a gerar versão 1.1.1, código 1004, e pode reaproveitar bibliotecas de um APK assinado somente após conferir árvore Rust idêntica e certificado. O arquivo de fontes correspondente acompanha o APK.
+
+### Distribuição SUNMI 1.2.2
+
+O nome visível do piloto é **Zavix Remote Sunmi**. O pacote, assinatura e nome interno de armazenamento permanecem iguais para preservar ID, senha e configurações nas atualizações. O futuro aplicativo Android geral terá o nome **Zavix Remote** e não faz parte desta homologação.
+
+No Android 7, a operação `PROJECT_MEDIA` não possui mapeamento de string na API AppOps usada inicialmente. O receiver não consulta essa API incompatível: o script administrativo confirma a permissão e o sistema Android valida MediaProjection. O helper de preparação reaproveita o fluxo de retorno do serviço e pode registrar `boot_received` sem um reinício físico; nenhum teste de reinício é implícito nesse registro.
