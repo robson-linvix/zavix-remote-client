@@ -55,6 +55,8 @@ class _ZavixSessionControlsState extends State<ZavixSessionControls> {
     _menu.close();
     setState(() { _tab = (_tab + 1) % 3; });
     if (_tab == 2) {
+      _mode = 'auto';
+      _applyMode();
       _menu.open();
     } else {
       _mode = _tab == 0 ? 'auto' : 'economy';
