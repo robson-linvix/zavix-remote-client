@@ -1,22 +1,31 @@
 name: ZAVIX gateway controls Linux
 on:
   workflow_dispatch:
+    inputs:
+      bridge_run_id:
+        description: Reuse a successful bridge from an identical Rust source tree
+        required: false
+        default: ''
 permissions:
   contents: read
+  actions: read
 concurrency:
   group: zavix-gateway-${{ github.ref }}
   cancel-in-progress: false
 jobs:
   bridge:
+    if: inputs.bridge_run_id == ''
     uses: ./.github/workflows/bridge.yml
   gateway:
     needs: bridge
+    if: always() && (needs.bridge.result == 'success' || inputs.bridge_run_id != '')
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
         with:
           submodules: recursive
+          fetch-depth: 0
       - name: Build dependencies
         run: |
           sudo apt-get update
@@ -39,9 +48,26 @@ jobs:
         with:
           prefix-key: zavix-gateway-linux
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+        if: inputs.bridge_run_id == ''
         with:
           name: bridge-artifact
           path: ./
+      - name: Verify reusable Rust source
+        if: inputs.bridge_run_id != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ZAVIX_BRIDGE_RUN_ID: ${{ inputs.bridge_run_id }}
+        run: |
+          [[ "$ZAVIX_BRIDGE_RUN_ID" =~ ^[0-9]+$ ]]
+          bridge_revision=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$ZAVIX_BRIDGE_RUN_ID" --jq .head_sha)
+          git diff --exit-code "$bridge_revision" "$GITHUB_SHA" -- src libs Cargo.toml Cargo.lock .github/workflows/bridge.yml
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+        if: inputs.bridge_run_id != ''
+        with:
+          name: bridge-artifact
+          path: ./
+          run-id: ${{ inputs.bridge_run_id }}
+          github-token: ${{ github.token }}
       - name: Analyze controls
         working-directory: flutter
         run: |

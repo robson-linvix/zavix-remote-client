@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import '../../common.dart';
 import '../../models/model.dart';
+import '../../models/platform_model.dart';
 import '../../consts.dart';
 
 const zavixGatewayControls = bool.fromEnvironment('ZAVIX_GATEWAY');
