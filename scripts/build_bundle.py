@@ -50,7 +50,7 @@ def build(x86,x64,wix):
     E.SubElement(ba,'{'+BAL+'}WixStandardBootstrapperApplication',{'Theme':'hyperlinkLicense','LicenseUrl':'https://remote.zavix.app/privacidade',
         'LocalizationFile':str(ROOT/'res/zavix-bundle/pt-BR.wxl'),'ShowVersion':'yes','SuppressOptionsUI':'yes'})
     condition=E.SubElement(bundle,'{'+BAL+'}Condition',{'Message':'O ZAVIX Remote requer Windows 7 SP1, Windows 8/8.1, Windows 10 ou Windows 11.'})
-    condition.text='VersionNT >= v6.1 AND (VersionNT <> v6.1 OR ServicePackLevel >= 1)'
+    condition.set('Condition','VersionNT >= v6.1 AND (VersionNT <> v6.1 OR ServicePackLevel >= 1)')
     chain=node(bundle,'Chain')
     node(chain,'MsiPackage',Id='ZavixX86',SourceFile=str(out/f'ZAVIXRemote-{v}-x86.msi'),Visible='no',Vital='yes',
         InstallCondition='NOT VersionNT64 OR WindowsBuildNumber < 10240')
