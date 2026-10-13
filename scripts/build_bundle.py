@@ -22,6 +22,9 @@ def checked(folder,arch):
     for item in runtime:
         c=item['configuration']
         assert item['result']=='passed' and c['architecture']==arch and c['version']==v and c['approve_mode']=='click' and c['incoming_only'] and not c['filename_configuration'] and c['updater']=='N' and c['server']=='187.77.241.190:21116' and c['api']=='https://remote.zavix.app'
+    if arch=='x86':
+        startup=json.loads((folder/'sciter-startup-evidence.json').read_text(encoding='utf-8-sig'))
+        assert startup['result']=='passed'
     lifecycle=json.loads((folder/'windows-msi-evidence.json').read_text(encoding='utf-8-sig'))
     assert {'previous-version-install','upgrade-to-release','downgrade blocked','repair missing file','uninstall and legacy sentinel preservation'} <= {item['case'] for item in lifecycle}
     for item in lifecycle:
@@ -68,6 +71,8 @@ def build(x86,x64,wix):
             t.add(folder/source_item['name'],arcname=f'ZAVIXRemote-source/{arch}-build-inputs.tar.gz')
             for name in ['manifest.json','build-provenance.json','windows-runtime-evidence.json','windows-msi-evidence.json']:
                 t.add(folder/name,arcname=f'ZAVIXRemote-source/evidence/{arch}/{name}')
+            if arch=='x86':
+                t.add(folder/'sciter-startup-evidence.json',arcname='ZAVIXRemote-source/evidence/x86/sciter-startup-evidence.json')
         tracked=subprocess.check_output(['git','ls-files','-z'],cwd=ROOT,text=True).split('\0')
         for name in tracked:
             p=ROOT/name

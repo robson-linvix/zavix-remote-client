@@ -431,8 +431,7 @@ class _DesktopHomePageState extends State<DesktopHomePage>
           ),
           if (!isOutgoingOnly)
             Text(
-              isWindows && bind.mainGetAppNameSync() == 'ZAVIXRemote' &&
-                      model.approveMode == 'click'
+              isWindows && bind.mainGetAppNameSync() == 'ZAVIXRemote'
                   ? 'Atendimento remoto com sua aprovação.'
                   : translate("desk_tip"),
               overflow: TextOverflow.clip,
