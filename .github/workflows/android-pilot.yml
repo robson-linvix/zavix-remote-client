@@ -107,6 +107,7 @@ jobs:
         working-directory: flutter
         env:
           JAVA_HOME: /usr/lib/jvm/java-17-openjdk-amd64
+          GRADLE_OPTS: '-Dorg.gradle.jvmargs=-Xmx4g -Dorg.gradle.workers.max=2'
         run: flutter build apk --release --flavor pilot --target-platform '${{ matrix.flutter_target }}' --split-per-abi --build-name 1.0.0 --build-number 1
       - name: Verify APK identity and signature
         run: |

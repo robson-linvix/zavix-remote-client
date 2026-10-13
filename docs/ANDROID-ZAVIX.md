@@ -128,6 +128,11 @@ resolver `productFlavors.store.signingConfig`. A configuração de assinatura fo
 movida para o bloco do flavor `store`, sem mudar a chave nem o perfil de piloto.
 Nova compilação necessária para confirmar a correção. O proprietário informou
 dificuldade de login SUNMI; consultar o portal mais tarde, sem insistir no acesso.
+Na execução seguinte `38330127619` (fonte `643d18d`), a avaliação Gradle
+passou e ARM64 avançou até R8/lint, mas falhou com `Java heap space`.
+O workflow exclusivo Android agora reserva heap de 4 GB e limita a dois workers
+nesse passo, sem mudar `gradle.properties`, desativar lint/R8 ou afetar o build
+Windows. A próxima execução ainda precisa comprovar o APK final.
 
 Antes da loja: chave definitiva protegida e backup, Play App Signing, package
 confirmado, AAB de release validado, privacidade pública e dentro do app,
