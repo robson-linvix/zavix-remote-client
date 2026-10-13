@@ -35,7 +35,7 @@ def build(bundle, output, wix, fixture=False, arch='x64'):
         node(package,'Launch',Condition='VersionNT64 AND WINDOWS_BUILD >= 10240',Message='O ZAVIX Remote requer Windows 10 ou superior, 64 bits.')
     else:
         node(package,'Launch',Condition='VersionNT >= 601 AND (VersionNT <> 601 OR ServicePackLevel >= 1)',Message='O ZAVIX Remote de 32 bits requer Windows 7 SP1 ou superior.')
-    for key,value in {'ARPPRODUCTICON':'ZavixIcon','ARPHELPLINK':'https://remote.zavix.app/download',
+    for key,value in {'DISABLEADVTSHORTCUTS':'1','ARPPRODUCTICON':'ZavixIcon','ARPHELPLINK':'https://remote.zavix.app/download',
         'ARPURLINFOABOUT':'https://remote.zavix.app','ARPCONTACT':'robson@linvix.com.br','ARPINSTALLLOCATION':'[INSTALLFOLDER]'}.items():
         node(package,'Property',Id=key,Value=value)
     node(package,'Icon',Id='ZavixIcon',SourceFile=str(ROOT/'res/icon.ico'))
@@ -84,11 +84,11 @@ def build(bundle, output, wix, fixture=False, arch='x64'):
                 ('MsiProductCode','[ProductCode]','string'),('BuildDate',build_date,'string')]:
                 node(state,'RegistryValue',Name=name,Value=value,Type=typ)
             node(component,'Shortcut',Id='DesktopShortcut',Directory='DesktopFolder',Name=brand['product_name'],
-                Target='[#AppExe]',Icon='ZavixIcon',IconIndex='0',WorkingDirectory='INSTALLFOLDER')
+                Advertise='yes',Icon='ZavixIcon',IconIndex='0',WorkingDirectory='INSTALLFOLDER')
             node(component,'Shortcut',Id='StartMenuShortcut',Directory='ProgramMenuFolder',Name=brand['product_name'],
-                Target='[#AppExe]',Icon='ZavixIcon',IconIndex='0',WorkingDirectory='INSTALLFOLDER')
+                Advertise='yes',Icon='ZavixIcon',IconIndex='0',WorkingDirectory='INSTALLFOLDER')
             node(component,'Shortcut',Id='StartupTray',Directory='StartupFolder',Name=brand['product_name']+' Tray',
-                Target='[#AppExe]',Arguments='--tray',Icon='ZavixIcon',IconIndex='0',WorkingDirectory='INSTALLFOLDER')
+                Advertise='yes',Arguments='--tray',Icon='ZavixIcon',IconIndex='0',WorkingDirectory='INSTALLFOLDER')
     node(package,'StandardDirectory',Id='StartupFolder')
     node(package,'StandardDirectory',Id='DesktopFolder')
     node(package,'StandardDirectory',Id='ProgramMenuFolder')
