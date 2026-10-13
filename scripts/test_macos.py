@@ -14,7 +14,8 @@ pkg=a.release/next(f['name'] for f in manifest['files'] if f['name'].endswith('.
 app=Path('/Applications')/(app_name+'.app');exe=app/'Contents/MacOS'/app_name
 labels={k:f'com.carriez.{app_name}_{k}' for k in ['service','server']}
 console_uid=command('/usr/bin/stat','-f','%u','/dev/console').stdout.strip()
-result={'product':manifest['product'],'version':manifest['version'],'architecture':a.arch,'environment':'macOS 15 ephemeral CI','developer_id_signed':False,'notarized':False}
+result={'console_uid':console_uid,'product':manifest['product'],'version':manifest['version'],'architecture':a.arch,'environment':'macOS 15 ephemeral CI','developer_id_signed':False,'notarized':False}
+print(json.dumps({'console_uid':console_uid,'product':manifest['product'],'architecture':a.arch}),flush=True)
 try:
     signature=command('pkgutil','--check-signature',pkg,check=False)
     assert 'no signature' in (signature.stdout+signature.stderr).lower() or 'unsigned' in (signature.stdout+signature.stderr).lower()
@@ -44,7 +45,13 @@ try:
         gui=any(str(exe) in line and not any(flag in line for flag in ['--server','--cm','--tray','--zavix-diagnostics']) for line in processes)
         if gui:break
         time.sleep(1)
-    assert gui,'Installer did not automatically launch the Flutter application'
+    if not gui:
+        details=[line for line in processes if app_name in line]
+        crash_folder=Path.home()/'Library/Logs/DiagnosticReports'
+        crashes=sorted(crash_folder.glob(app_name+'*'),key=lambda p:p.stat().st_mtime)[-2:] if crash_folder.exists() else []
+        for crash in crashes:
+            print(crash.read_text(errors='replace')[:12000],flush=True)
+        raise RuntimeError('Installer did not automatically launch Flutter; console UID='+console_uid+'; processes='+str(details))
     time.sleep(5)
     assert any(str(exe) in line and not any(flag in line for flag in ['--server','--cm','--tray','--zavix-diagnostics']) for line in command('/bin/ps','-axo','pid=,command=').stdout.splitlines())
     # Tampered external configuration never overrides the compiled assisted profile.
