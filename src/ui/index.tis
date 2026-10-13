@@ -728,11 +728,11 @@ class App: Reactor.Component
                     <div .left-pane style={incoming_only ? "width:*" : ""}>
                     <div>
                         {is_custom_client && handler.get_builtin_option("hide-powered-by-me") != "Y" ? <div .link #powered-by style="opacity:0.5;font-size:0.8em;text-decoration:underline">{translate('powered_by_me')}</div> : ""}
-                        <div .title style="flow:horizontal; position:relative; height:1.6em; line-height:1.6em">
-                            <span>{is_zavix ? 'ZAVIX Remote' : translate('Your Desktop')}</span>
+                        <div .title style={is_zavix ? "flow:horizontal; position:relative; height:auto; line-height:1.35em" : "flow:horizontal; position:relative; height:1.6em; line-height:1.6em"}>
+                            <span style={is_zavix ? "width:*; white-space:normal" : ""}>{is_zavix ? 'Assistência Remota Especializada' : translate('Your Desktop')}</span>
                             {outgoing_only ? <span .link #open-settings style="position:absolute; right:0; bottom:0; transform:scale(0.6); transform-origin:right bottom; opacity:0.85">{svg_menu}</span> : ""}
                         </div>
-                        <div .lighter-text>{is_zavix ? 'Informe seu ID ao atendente e aceite a solicitação neste computador.' : outgoing_only ? translate('outgoing_only_desk_tip') : translate('desk_tip')}</div>
+                        <div .lighter-text style={is_zavix ? "white-space:pre-line" : ""}>{is_zavix ? 'Informe o ID e senha apenas para pessoas autorizadas dentro dos canais oficiais de atendimento ao cliente Linvix e Zavix.\n\nPara conceder o acesso, ao ser solicitado clique em "Aceitar".' : outgoing_only ? translate('outgoing_only_desk_tip') : translate('desk_tip')}</div>
                         {outgoing_only ? <div style="position:absolute; left:-10000px; top:-10000px; width:0; height:0; overflow:hidden"><MyIdMenu /></div> : ""}
                         {!outgoing_only && <div .your-desktop>
                             <MyIdMenu />

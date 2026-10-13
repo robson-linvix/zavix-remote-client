@@ -420,7 +420,9 @@ class _DesktopHomePageState extends State<DesktopHomePage>
                 Align(
                   alignment: Alignment.centerLeft,
                   child: Text(
-                    translate("Your Desktop"),
+                    isWindows && bind.mainGetAppNameSync() == 'ZAVIXRemote'
+                        ? 'Assistência Remota Especializada'
+                        : translate("Your Desktop"),
                     style: Theme.of(context).textTheme.titleLarge,
                   ),
                 ),
@@ -432,7 +434,7 @@ class _DesktopHomePageState extends State<DesktopHomePage>
           if (!isOutgoingOnly)
             Text(
               isWindows && bind.mainGetAppNameSync() == 'ZAVIXRemote'
-                  ? 'Atendimento remoto com sua aprovação.'
+                  ? 'Informe o ID e senha apenas para pessoas autorizadas dentro dos canais oficiais de atendimento ao cliente Linvix e Zavix.\n\nPara conceder o acesso, ao ser solicitado clique em "Aceitar".'
                   : translate("desk_tip"),
               overflow: TextOverflow.clip,
               style: Theme.of(context).textTheme.bodySmall,
