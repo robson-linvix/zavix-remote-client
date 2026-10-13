@@ -421,7 +421,7 @@ class _DesktopHomePageState extends State<DesktopHomePage>
                   alignment: Alignment.centerLeft,
                   child: Text(
                     isWindows && bind.mainGetAppNameSync() == 'ZAVIXRemote'
-                        ? 'Assistência Remota Especializada'
+                        ? 'Assistência Remota'
                         : translate("Your Desktop"),
                     style: Theme.of(context).textTheme.titleLarge,
                   ),
