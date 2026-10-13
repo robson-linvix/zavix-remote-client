@@ -18,13 +18,15 @@ with tarfile.open(sources, 'w:gz') as archive:
         p = root / name
         if p.is_file(): archive.add(p, arcname='ZAVIXRemote-source/' + name, recursive=False)
 files = []
-for ext in ('exe',):
+for ext in ('msi',):
     p = out / f'ZAVIXRemote-{brand["version"]}.{ext}'
     if not p.is_file() or p.stat().st_size < 1000000: raise RuntimeError(f'Missing Windows {ext} artifact')
     files.append(p)
 files.append(sources)
-manifest = {'product':brand['product_name'],'version':brand['version'],'upstream':'1.5.0','revision':revision,'signed':False,'mode':'assisted','files':[{ 'name':p.name,'bytes':p.stat().st_size,'sha256':hashlib.sha256(p.read_bytes()).hexdigest()} for p in files]}
+manifest = {'product':brand['product_name'],'version':brand['version'],'upstream':'1.5.0','revision':revision,'signed':False,'mode':'assisted','package':'msi','files':[{ 'name':p.name,'bytes':p.stat().st_size,'sha256':hashlib.sha256(p.read_bytes()).hexdigest()} for p in files]}
 (out / 'manifest.json').write_text(json.dumps(manifest, indent=2))
 (out / 'SHA256SUMS.txt').write_text(''.join(f'{f["sha256"]}  {f["name"]}\n' for f in manifest['files']))
 (out / 'windows-runtime-evidence.json').write_bytes((root / 'windows-runtime-evidence.json').read_bytes())
 print(json.dumps(manifest, indent=2))
+
+(out / 'windows-msi-evidence.json').write_bytes((root / 'windows-msi-evidence.json').read_bytes())

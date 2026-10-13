@@ -47,6 +47,7 @@ pub fn diagnostics_requested() -> bool {
             "product_name": brand.product_name,
             "version": brand.version,
             "base_version": crate::VERSION,
+            "installed": crate::platform::windows::is_installed(),
             "server": config::Config::get_rendezvous_server(),
             "relay": config::Config::get_option("relay-server"),
             "api": crate::common::get_api_server(config::Config::get_option("api-server"), config::Config::get_option("custom-rendezvous-server")),

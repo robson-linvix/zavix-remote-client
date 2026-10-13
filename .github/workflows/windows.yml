@@ -1,4 +1,4 @@
-# ZAVIX Windows V1: one portable executable and corresponding sources.
+# ZAVIX Windows V1: one MSI installer and corresponding sources.
 name: ZAVIX Remote Windows
 'on':
   workflow_dispatch: {}
@@ -12,7 +12,7 @@ env:
   VCPKG_BINARY_SOURCES: clear;files,C:/zavix-vcpkg-cache,readwrite
   VCPKG_COMMIT_ID: 9e593bb18ea69cc5095e012465dcd675a822ed0d
   VCPKG_CMAKE_VERSION: 4.3.0
-  VERSION: 1.5.0.1
+  VERSION: 1.5.0.2
   UPLOAD_ARTIFACT: 'true'
   FLUTTER_WINDOWS_ARM_VERSION: 3.44.9
 jobs:
@@ -141,29 +141,27 @@ jobs:
       with:
         name: ${{ matrix.job.arch == 'aarch64' && 'topmostwindow-artifacts-ARM64' || 'topmostwindow-artifacts-x64' }}
         path: ./dist
+    - name: Verify single assisted approval button
+      working-directory: flutter
+      run: flutter test test/zavix_approval_buttons_test.dart
     - name: Verify runtime configuration and renaming protection
       run: ./scripts/test_windows.ps1 -Bundle ./dist
     - name: Collect original dependency notices
       run: 'python scripts/collect_licenses.py
 
         if ($LASTEXITCODE -ne 0) { throw ''License collection failed'' }'
-    - name: Package portable EXE
-      shell: bash
-      run: 'sed -i ''/dpiAware/d'' res/manifest.xml
-
-        pushd libs/portable
-
-        pip3 install -r requirements.txt
-
-        python3 generate.py -f ../../dist/ -o . -e ../../dist/ZAVIXRemote.exe
-
-        popd
-
-        mkdir -p SignOutput
-
-        cp target/release/rustdesk-portable-packer.exe SignOutput/ZAVIXRemote-1.5.0.1.exe
-
-        '
+    - name: Install pinned WiX packaging tools
+      run: |
+        dotnet tool install wix --tool-path .tools/wix --version 4.0.6
+        if ($LASTEXITCODE -ne 0) { throw 'WiX installation failed' }
+        ./.tools/wix/wix.exe extension add WixToolset.UI.wixext/4.0.6
+        if ($LASTEXITCODE -ne 0) { throw 'WiX UI extension installation failed' }
+    - name: Build Windows MSI
+      run: |
+        python scripts/build_msi.py --wix .tools/wix/wix.exe
+        if ($LASTEXITCODE -ne 0) { throw 'MSI packaging failed' }
+    - name: Verify MSI lifecycle on Windows
+      run: ./scripts/test_msi.ps1 -Installer ./SignOutput/ZAVIXRemote-1.5.0.2.msi
     - name: Verify installer and source manifest
       run: python scripts/package_release.py
     - name: Upload ZAVIX Windows artifacts
@@ -179,4 +177,17 @@ jobs:
         name: zavix-windows-x64-bundle
         path: dist/
         retention-days: 7
+    - name: Upload installer diagnostics
+      if: always()
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+      with:
+        name: zavix-msi-validation
+        path: |
+          msi-*.log
+          windows-msi-evidence.json
+          runtime-installed*.json
+          runtime-installed-error.txt
+          SignOutput/*.wxs
+        if-no-files-found: ignore
+        retention-days: 14
     timeout-minutes: 120

@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_hbb/common/widgets/audio_input.dart';
 import 'package:flutter_hbb/consts.dart';
 import 'package:flutter_hbb/desktop/widgets/tabbar_widget.dart';
+import 'package:flutter_hbb/desktop/widgets/zavix_approval_buttons.dart';
 import 'package:flutter_hbb/models/chat_model.dart';
 import 'package:flutter_hbb/models/cm_file_model.dart';
 import 'package:flutter_hbb/utils/platform_channel.dart';
@@ -1078,6 +1079,19 @@ class _CmControlPanel extends StatelessWidget {
                 key: kOptionHideElevateButtonInAcceptWindow) !=
             'Y';
     final showAccept = model.approveMode != 'password';
+    if (isWindows && bind.mainGetAppNameSync() == 'ZAVIXRemote') {
+      return ZavixApprovalButtons(
+        showAccept: showAccept,
+        canElevate: showElevation,
+        acceptLabel: translate('Accept'),
+        cancelLabel: translate('Cancel'),
+        elevationHint: translate('accept_and_elevate_btn_tooltip'),
+        onAccept: () => handleAccept(context),
+        onElevate: () => handleElevate(context),
+        onAccepted: () => windowManager.minimize(),
+        onCancel: handleDisconnect,
+      ).marginOnly(bottom: buttonBottomMargin);
+    }
     return Column(
       mainAxisAlignment: MainAxisAlignment.end,
       children: [
