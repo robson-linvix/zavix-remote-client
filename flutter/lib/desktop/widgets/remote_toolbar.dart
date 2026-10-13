@@ -22,6 +22,7 @@ import '../../models/platform_model.dart';
 import '../../common/shared_state.dart';
 import './popup_menu.dart';
 import './kb_layout_type_chooser.dart';
+import './zavix_session_controls.dart';
 import 'package:flutter_hbb/utils/scale.dart';
 import 'package:flutter_hbb/common/widgets/custom_scale_base.dart';
 
@@ -816,6 +817,9 @@ class _RemoteToolbarState extends State<RemoteToolbar> {
     }));
     if (!isWebDesktop) {
       toolbarItems.add(_MobileActionMenu(ffi: widget.ffi));
+    }
+    if (zavixGatewayControls && !isWebDesktop) {
+      toolbarItems.add(ZavixSessionControls(ffi: widget.ffi));
     }
 
     toolbarItems.add(Obx(() {

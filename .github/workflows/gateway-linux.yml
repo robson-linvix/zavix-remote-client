@@ -1,0 +1,64 @@
+name: ZAVIX gateway controls Linux
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: zavix-gateway-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  bridge:
+    uses: ./.github/workflows/bridge.yml
+  gateway:
+    needs: bridge
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          submodules: recursive
+      - name: Build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang libclang-dev llvm-dev ninja-build cmake pkg-config libgtk-3-dev libayatana-appindicator3-dev libasound2-dev libpulse-dev libxdo-dev libxfixes-dev libxcb-randr0-dev libxcb-shape0-dev libxcb-xfixes0-dev libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev libssl-dev libdbus-1-dev libopus-dev libvpx-dev libyuv-dev libaom-dev libva-dev nasm
+          mkdir -p /tmp/zavix-pkgconfig
+          printf 'prefix=/usr\nlibdir=/usr/lib/x86_64-linux-gnu\nincludedir=/usr/include\nName: libyuv\nDescription: system libyuv\nVersion: 1\nLibs: -L${libdir} -lyuv\nCflags: -I${includedir}\n' > /tmp/zavix-pkgconfig/libyuv.pc
+          echo 'PKG_CONFIG_PATH=/tmp/zavix-pkgconfig' >> "$GITHUB_ENV"
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2
+        with:
+          channel: stable
+          flutter-version: '3.24.5'
+      - name: Existing Flutter compatibility patch
+        run: |
+          cd "$(dirname "$(dirname "$(command -v flutter)")")"
+          git apply "$GITHUB_WORKSPACE/.github/patches/flutter_3.24.4_dropdown_menu_enableFilter.diff"
+      - uses: dtolnay/rust-toolchain@e97e2d8cc328f1b50210efc529dca0028893a2d9
+        with:
+          toolchain: '1.75'
+      - uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32
+        with:
+          prefix-key: zavix-gateway-linux
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+        with:
+          name: bridge-artifact
+          path: ./
+      - name: Analyze controls
+        working-directory: flutter
+        run: |
+          flutter pub get
+          flutter analyze --no-pub --no-fatal-infos --no-fatal-warnings lib/desktop/widgets/zavix_session_controls.dart lib/desktop/widgets/remote_toolbar.dart
+      - name: Native gateway
+        run: cargo build --locked --lib --features flutter,linux-pkg-config --release
+      - name: Flutter gateway
+        working-directory: flutter
+        run: flutter build linux --release --dart-define=ZAVIX_GATEWAY=true
+      - name: Package
+        run: |
+          mkdir -p gateway-output
+          tar -C flutter/build/linux/x64/release/bundle -czf gateway-output/zavix-gateway-linux.tar.gz .
+          sha256sum gateway-output/zavix-gateway-linux.tar.gz > gateway-output/SHA256SUMS
+          printf '%s\n' "$GITHUB_SHA" > gateway-output/SOURCE_REVISION
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: zavix-gateway-linux
+          path: gateway-output/*
