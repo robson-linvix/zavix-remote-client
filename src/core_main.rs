@@ -43,7 +43,7 @@ pub fn core_main() -> Option<Vec<String>> {
     if crate::zavix::diagnostics_requested() {
         return None;
     }
-    #[cfg(target_os = "macos")]
+    #[cfg(all(target_os = "macos", feature = "zavix-macos"))]
     if crate::zavix_macos::diagnostics_requested() {
         return None;
     }

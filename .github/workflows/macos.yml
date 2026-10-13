@@ -66,7 +66,7 @@ jobs:
           "$VCPKG_ROOT/vcpkg" install --triplet '${{ matrix.machine.triplet }}' --host-triplet '${{ matrix.machine.triplet }}' --x-install-root="$VCPKG_ROOT/installed"
       - name: Build native core and launchd service
         run: |
-          cargo build --locked --release --features flutter --lib --bin service
+          cargo build --locked --release --features flutter,zavix-macos --lib --bin service
       - name: Build branded macOS application
         working-directory: flutter
         env:

@@ -12,7 +12,7 @@ for name in ['LICENCE','NOTICE-ZAVIX.md','THIRD-PARTY-LICENSES.md','PRIVACY.md',
     shutil.copyfile(root/name,legal/name)
 flutter_root=Path(shutil.which('flutter')).resolve().parents[1]
 shutil.copyfile(flutter_root/'LICENSE',legal/'Flutter-LICENSE.txt')
-metadata=json.loads(subprocess.check_output(['cargo','metadata','--locked','--features','flutter','--format-version','1'],cwd=root))
+metadata=json.loads(subprocess.check_output(['cargo','metadata','--locked','--features','flutter,zavix-macos','--format-version','1'],cwd=root))
 inventory=[]
 for package in metadata['packages']:
     inventory.append({k:package.get(k) for k in ['name','version','license','repository']})

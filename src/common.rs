@@ -2361,7 +2361,7 @@ pub fn rustdesk_interval(i: Interval) -> ThrottledInterval {
 }
 
 pub fn load_custom_client() {
-    #[cfg(target_os = "macos")]
+    #[cfg(all(target_os = "macos", feature = "zavix-macos"))]
     {
         if let Err(err) = crate::zavix_macos::initialize() {
             eprintln!("macOS configuration error: {}", err);
