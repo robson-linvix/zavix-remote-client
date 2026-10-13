@@ -1,3 +1,19 @@
+# Publicação Windows 1.5.0.3 — ZAVIX Remote e Linvix Remote
+
+As duas edições foram publicadas em https://remote.zavix.app/download. O EXE único contém os MSIs de 32 e 64 bits; escolhe Sciter x86 para Windows 7 SP1/8/8.1 e Windows 10 x86, ou Flutter x64 para Windows 10/11 x64. Os MSIs separados e fontes correspondentes também estão disponíveis.
+
+- Empacotamento: e19137812f363379af2b9c60d4d31227f7edb957, ramo codex/windows-universal-v3.
+- ZAVIX x86: build38332814926 / eb9a865; x64: build38331622778 / 711c3c3; EXE: build38335498550.
+- Linvix x86: build38332818230 / eb9a865; x64: build38333488074 / a5d980e; EXE: build38335500679.
+- Fontes incluem os inputs reais por arquitetura, perfil selecionado, lockfiles/arquivos gerados e proveniência individual. O manifesto universal registra compiled_revisions; a revisão de empacotamento é separada da compilação.
+- Os quatro ciclos MSI e os dois ciclos EXE passaram no Windows2022. O x86 também abriu a GUI sob WOW64. EXE: seleção automática x64, substituição de MSI x86, serviço, reparo e remoção. As revisões x64 passaram os três testes Flutter do aceite único e a verificação de runtime/proteção contra renomeação. Os downloads públicos foram conferidos integralmente contra SHA256.
+
+Os pacotes permanecem sem Authenticode. SignPath ainda aguarda avaliação. Windows 7/8 e sistemas de 32 bits não foram homologados em máquina real; o proprietário autorizou esse teste em produção com seu time. UAC interativo, sessão real dos novos instaladores e migração de instalação EXE antiga completa dependem dos testes do time. A fixture de versão MSI anterior usa o payload atual com número anterior, não o binário antigo.
+
+A orientação de segurança do cliente 1.5.0.4 foi preservada no main para a próxima compilação; não foi incorporada sem recompilar aos binários 1.5.0.3.
+
+## Histórico anterior ao build MSI/universal
+
 # Build Windows ZAVIX Remote
 
 Base: RustDesk 1.5.0, commit fada664df7a294d1d1a9ca3e7cd3637069122f17.

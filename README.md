@@ -3,12 +3,13 @@
 ZAVIX Remote is a maintained derivative of [RustDesk OSS](https://github.com/rustdesk/rustdesk), developed by LINVIX SOFTWARES LTDA for assisted remote support. The client source is licensed under [AGPL-3.0](LICENCE); original notices are retained. ZAVIX trademarks remain reserved to their owners.
 
 - [Windows download and instructions](https://remote.zavix.app/download)
-- [Published binaries, corresponding sources and checksums](https://github.com/robson-linvix/zavix-remote-client/releases/tag/v1.5.0.1)
-- [Build provenance and next Windows package](BUILD-ZAVIX.md)
+- [Published binaries, corresponding sources and checksums](https://github.com/robson-linvix/zavix-remote-client/releases/tag/v1.5.0.3)
+- [Linvix Remote: binaries, corresponding sources and checksums](https://github.com/robson-linvix/zavix-remote-client/releases/tag/linvix-v1.5.0.3)
+- [Build provenance and Windows packages](BUILD-ZAVIX.md)
 - [Code signing policy](CODE_SIGNING_POLICY.md)
 - [Privacy and third-party notices](PRIVACY.md)
 
-The released Windows client is unsigned. A SignPath Foundation application was submitted on 12 October 2026 and is awaiting assessment; no sponsorship or signing approval has been granted. The project is new and has no established public adoption record. Dependency-license questions are disclosed in [THIRD-PARTY-LICENSES.md](THIRD-PARTY-LICENSES.md).
+ZAVIX Remote and Linvix Remote 1.5.0.3 are available on the official download page as universal EXE installers with separate x86/x64 MSIs. Windows 7/8 and actual 32-bit Windows validation remain pending with the maintainer’s team. Both releases are unsigned. A SignPath Foundation application was submitted on 12 October 2026 and is awaiting assessment; no sponsorship or signing approval has been granted. The project is new and has no established public adoption record. Dependency-license questions are disclosed in [THIRD-PARTY-LICENSES.md](THIRD-PARTY-LICENSES.md).
 
 Upstream base: RustDesk 1.5.0, commit `fada664df7a294d1d1a9ca3e7cd3637069122f17`; shared submodule `hbb_common` at `229b904508364c8997aad0fb5af57effac859f60`. The upstream README follows unchanged.
 

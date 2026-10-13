@@ -10,7 +10,7 @@ The support gateway participates in the connection and can view transmitted cont
 
 Application diagnostics may be written locally. The exact retention of other server and audit data has not been specified by these operational notes and should be confirmed with the maintainer. These notes do not claim that the current client cryptographically restricts all connections to portal-authorized requests; that agent feature remains a separate implementation stage.
 
-The download page explains the preconfigured support workflow. Privacy information must also be presented during the planned MSI installation, including the network destination, service installation and uninstallation behavior. That installer is not yet released.
+The download page explains the preconfigured support workflow. The MSI installation presents privacy and license information, including the network destination and service installation. ZAVIX Remote and Linvix Remote 1.5.0.3 installers are published; both use the same assisted infrastructure.
 
 Full operational disclosure: https://remote.zavix.app/privacidade
 Source and third-party notices: [LICENCE](LICENCE), [NOTICE-ZAVIX.md](NOTICE-ZAVIX.md), [THIRD-PARTY-LICENSES.md](THIRD-PARTY-LICENSES.md).
