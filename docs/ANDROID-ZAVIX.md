@@ -20,6 +20,27 @@ foi alterado. Não substituir o instalador Windows ou os downloads de produção
 
 ## Identidade e compilação
 
+Primeiro APK ARMv7 gerado pela execução `38332085902`, fonte `6462401`:
+`ZAVIXRemote-1.0.0-piloto-armeabi-v7a.apk`, 60.438.658 bytes,
+SHA256 `e864449ea2d3ea0ae0b34c22eedfcf5b0ef0227f48fbada421f4792b94dbbb42`.
+Download local e hashes do APK/fontes conferidos. Relatório aapt do CI confirma
+`app.zavix.remote.pilot`, versão `1.0.0-piloto`/code1001, min24, target36,
+label ZAVIX Remote e ABI armeabi-v7a. apksigner no CI confirma assinatura v2,
+certificado Android Debug; certificado SHA256
+`79da3bf2a1b7caac45710b3c698ffb17ca73dd1f543758fe7b6bc49c2267ef3b`.
+Bibliotecas baixadas inspecionadas como ELF32 ARM; perfil e inicializador das
+fontes correspondentes iguais aos da revisão compilada. Fonte AGPL acompanha.
+JRE/SDK locais indisponíveis: conferência criptográfica foi a do CI, com hashes
+locais iguais, não uma segunda execução local do apksigner.
+Pacote **assistido para teste**, não homologado no SUNMI nem solução não supervisionada.
+Não instalar na frota ou considerar pronto para loja/provisionamento permanente.
+Após ARMv7 concluir, a reexecução somente do job ARM64 foi aceita (attempt2,
+databaseId115091633426); download NDK passou e codecs estavam em compilação.
+Primeira de no máximo duas reexecuções adicionais por falha de download nessa fonte.
+Main Windows avançou separadamente a `36ff952`/1.5.0.4; a branch Android conserva
+baseline `19b1c49` sem modificá-lo. Não promover essa branch sobre main sem integrar
+os avanços Windows e validar novamente; nenhum build Windows foi tocado.
+
 - Package de produção proposto: `app.zavix.remote` (não registrado na loja).
 - Piloto: `app.zavix.remote.pilot`, coexistente com o RustDesk original e com a
   futura versão de produção. Nome visível ZAVIX Remote; versionName de piloto.
