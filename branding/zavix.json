@@ -1,7 +1,7 @@
 {
   "app_name": "ZAVIXRemote",
   "product_name": "ZAVIX Remote",
-  "version": "1.5.0.3",
+  "version": "1.5.0.4",
   "settings": {
     "custom-rendezvous-server": "187.77.241.190",
     "relay-server": "187.77.241.190:21117",

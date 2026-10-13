@@ -19,7 +19,7 @@ env:
   VCPKG_BINARY_SOURCES: clear;files,C:/zavix-vcpkg-cache,readwrite
   VCPKG_COMMIT_ID: 9e593bb18ea69cc5095e012465dcd675a822ed0d
   VCPKG_CMAKE_VERSION: 4.3.0
-  VERSION: 1.5.0.3
+  VERSION: 1.5.0.4
   UPLOAD_ARTIFACT: 'true'
   FLUTTER_WINDOWS_ARM_VERSION: 3.44.9
 jobs:
@@ -173,7 +173,7 @@ jobs:
         python scripts/build_msi.py --wix .tools/wix/wix.exe
         if ($LASTEXITCODE -ne 0) { throw 'MSI packaging failed' }
     - name: Verify MSI lifecycle on Windows
-      run: ./scripts/test_msi.ps1 -Installer ./SignOutput/${{ env.CLIENT_APP }}-1.5.0.3.msi
+      run: ./scripts/test_msi.ps1 -Installer ./SignOutput/${{ env.CLIENT_APP }}-1.5.0.4.msi
     - name: Verify installer and source manifest
       run: python scripts/package_release.py
     - name: Upload ZAVIX Windows artifacts
