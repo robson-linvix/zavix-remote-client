@@ -33,6 +33,11 @@ fn build_manifest() {
                 winapi::um::winnt::SUBLANG_ENGLISH_US,
             ))
             .set_manifest_file("res/manifest.xml");
+        #[cfg(target_pointer_width = "32")]
+        if let Err(err) = zavix_x86_resource::apply(&mut res) {
+            eprintln!("ZAVIX x86 resource error: {err}");
+            std::process::exit(1);
+        }
         match res.compile() {
             Err(e) => {
                 write!(std::io::stderr(), "{}", e).unwrap();
@@ -42,6 +47,10 @@ fn build_manifest() {
         }
     }
 }
+
+#[cfg(all(windows, feature = "inline", target_pointer_width = "32"))]
+#[path = "res/zavix-x86-resource.rs"]
+mod zavix_x86_resource;
 
 // bionic only exports getifaddrs()/freeifaddrs() from API 24, while the jniLibs
 // are built against the API 21 sysroot (flutter/ndk_*.sh). webrtc-util calls

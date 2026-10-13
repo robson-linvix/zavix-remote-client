@@ -1,0 +1,128 @@
+name: ZAVIX Remote Windows x86 legado
+'on':
+  workflow_dispatch: {}
+permissions:
+  contents: read
+env:
+  LLVM_VERSION: 15.0.6
+  VCPKG_COMMIT_ID: 9e593bb18ea69cc5095e012465dcd675a822ed0d
+  VCPKG_CMAKE_VERSION: 4.3.0
+  VCPKG_BINARY_SOURCES: clear;files,C:/zavix-vcpkg-x86-cache,readwrite
+  VERSION: 1.5.0.3
+  ZAVIX_BUILD_VERSION: 1.5.0.3
+  PYTHONUTF8: '1'
+jobs:
+  windows-x86:
+    runs-on: windows-2022
+    timeout-minutes: 120
+    steps:
+    - name: Checkout source code
+      uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+      with:
+        submodules: recursive
+    - name: Install x86 LLVM and Clang
+      uses: rustdesk-org/install-llvm-action-32bit@6aa7d9ad3df84dff01cd4596dd0fc880a7f47fce
+      with:
+        version: ${{ env.LLVM_VERSION }}
+    - name: Install pinned upstream x86 Rust toolchain
+      shell: bash
+      run: |
+        rustup toolchain install nightly-2023-10-13-i686-pc-windows-msvc --target i686-pc-windows-msvc --component rustfmt --profile minimal --no-self-update --force-non-host
+        rustup default nightly-2023-10-13-i686-pc-windows-msvc --force-non-host
+    - uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32
+      with:
+        prefix-key: windows-2022-zavix-sciter-x86
+    - name: Setup vcpkg
+      uses: lukka/run-vcpkg@b1a0dd252f06b9e25b3c022a9a03bd7a427fb6a2
+      with:
+        vcpkgDirectory: C:\vcpkg
+        vcpkgGitCommitId: ${{ env.VCPKG_COMMIT_ID }}
+        doNotCache: false
+    - name: Restore native binary packages
+      id: native-cache
+      uses: actions/cache/restore@6f8efc29b200d32929f49075959781ed54ec270c
+      with:
+        path: C:/zavix-vcpkg-x86-cache
+        key: zavix-vcpkg-x86-${{ env.VCPKG_COMMIT_ID }}-${{ hashFiles('vcpkg.json', 'res/vcpkg/**', 'res/vcpkg-triplets/**') }}-v1
+    - name: Install x86 native dependencies
+      shell: bash
+      env:
+        VCPKG_DEFAULT_HOST_TRIPLET: x86-windows-static
+      run: |
+        mkdir -p C:/zavix-vcpkg-x86-cache
+        for attempt in 1 2 3; do
+          if "$VCPKG_ROOT/vcpkg" install --triplet x86-windows-static --x-install-root="$VCPKG_ROOT/installed"; then
+            exit 0
+          fi
+          if [ "$attempt" -eq 3 ]; then
+            find "$VCPKG_ROOT/buildtrees/libyuv" -name '*err.log' -exec cat {} \; || true
+            exit 1
+          fi
+          sleep 15
+        done
+    - name: Preserve compiled native packages
+      if: ${{ always() && steps.native-cache.outputs.cache-hit != 'true' }}
+      uses: actions/cache/save@6f8efc29b200d32929f49075959781ed54ec270c
+      with:
+        path: C:/zavix-vcpkg-x86-cache
+        key: zavix-vcpkg-x86-${{ env.VCPKG_COMMIT_ID }}-${{ hashFiles('vcpkg.json', 'res/vcpkg/**', 'res/vcpkg-triplets/**') }}-v1
+    - name: Validate ZAVIX embedded configuration
+      run: python scripts/validate_config.py
+    - name: Build x86 application with upstream Sciter ABI patch
+      shell: bash
+      run: |
+        python res/inline-sciter.py
+        sed -i 's/branch = "dyn"/branch = "dyn_x86"/g' Cargo.toml
+        cargo update -p sciter-rs --precise 674e07d3066ca9a92ced3816203ab6b652629d1e
+        cargo build --locked --features inline,vram,hwcodec --release --bin rustdesk
+        mkdir -p dist
+        cp target/release/rustdesk.exe dist/ZAVIXRemote.exe
+        python scripts/fetch_sciter_x86.py
+    - name: Verify x86 runtime configuration and rename protection
+      run: ./scripts/test_windows.ps1 -Bundle ./dist -Architecture x86
+    - name: Collect original dependency notices
+      run: python scripts/collect_licenses.py --arch x86
+    - name: Install pinned WiX tools
+      run: |
+        dotnet tool install wix --tool-path .tools/wix --version 4.0.6
+        if ($LASTEXITCODE -ne 0) { throw 'WiX installation failed' }
+        ./.tools/wix/wix.exe extension add WixToolset.UI.wixext/4.0.6
+        if ($LASTEXITCODE -ne 0) { throw 'WiX UI extension installation failed' }
+    - name: Build Intel MSI
+      run: |
+        python scripts/build_msi.py --arch x86 --wix .tools/wix/wix.exe
+        if ($LASTEXITCODE -ne 0) { throw 'x86 MSI packaging failed' }
+    - name: Verify x86 MSI lifecycle under WOW64
+      run: |
+        & "$env:WINDIR/SysWOW64/WindowsPowerShell/v1.0/powershell.exe" -NoProfile -ExecutionPolicy RemoteSigned -File ./scripts/test_msi.ps1 -Installer ./SignOutput/ZAVIXRemote-1.5.0.3-x86.msi -Architecture x86
+        if ($LASTEXITCODE -ne 0) { throw 'x86 lifecycle validation failed' }
+    - name: Archive actual x86 build inputs and checked installer
+      run: python scripts/package_release.py --arch x86
+    - name: Upload x86 release components
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+      with:
+        name: zavix-windows-x86-unsigned
+        path: SignOutput/
+        if-no-files-found: error
+        retention-days: 14
+    - name: Upload installable x86 bundle for diagnosis
+      if: always()
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+      with:
+        name: zavix-windows-x86-bundle
+        path: dist/
+        if-no-files-found: ignore
+        retention-days: 7
+    - name: Upload x86 installer diagnostics
+      if: always()
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+      with:
+        name: zavix-x86-msi-validation
+        path: |
+          msi-*.log
+          windows-msi-evidence.json
+          runtime-installed*.json
+          runtime-installed-error.txt
+          SignOutput/*.wxs
+        if-no-files-found: ignore
+        retention-days: 14

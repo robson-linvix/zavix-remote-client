@@ -47,6 +47,8 @@ pub fn diagnostics_requested() -> bool {
             "product_name": brand.product_name,
             "version": brand.version,
             "base_version": crate::VERSION,
+            "architecture": match std::env::consts::ARCH { "x86_64" => "x64", other => other },
+            "client_ui": if cfg!(feature = "flutter") { "flutter" } else { "sciter" },
             "installed": crate::platform::windows::is_installed(),
             "server": config::Config::get_rendezvous_server(),
             "relay": config::Config::get_option("relay-server"),

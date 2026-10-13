@@ -13,7 +13,7 @@ E.register_namespace('ui', UI)
 def node(parent, name, **attributes):
     return E.SubElement(parent, '{'+NS+'}'+name, attributes)
 
-def build(bundle, output, wix, fixture=False):
+def build(bundle, output, wix, fixture=False, arch='x64'):
     brand = json.loads((ROOT/'branding/zavix.json').read_text())
     app = brand['app_name']
     exe = bundle/(app+'.exe')
@@ -28,17 +28,20 @@ def build(bundle, output, wix, fixture=False):
         Version=msi_version,Language='1046',UpgradeCode=UPGRADE,Scope='perMachine',InstallerVersion='500')
     node(package,'SummaryInformation',Description='Instalador ZAVIX Remote para Windows x64',Codepage='1252')
     node(package,'MediaTemplate',EmbedCab='yes',CompressionLevel='high')
-    node(package,'MajorUpgrade',Schedule='afterInstallInitialize',DowngradeErrorMessage='Uma versão mais recente do ZAVIX Remote já está instalada.')
-    os_build=node(package,'Property',Id='WINDOWS_BUILD')
-    node(os_build,'RegistrySearch',Id='WindowsBuildSearch',Root='HKLM',Key='SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion',Name='CurrentBuildNumber',Type='raw',Bitness='always64')
-    node(package,'Launch',Condition='VersionNT64 AND WINDOWS_BUILD >= 10240',Message='O ZAVIX Remote requer Windows 10 ou superior, 64 bits.')
+    node(package,'MajorUpgrade',Schedule='afterInstallInitialize',AllowSameVersionUpgrades='yes',DowngradeErrorMessage='Uma versão mais recente do ZAVIX Remote já está instalada.')
+    if arch == 'x64':
+        os_build=node(package,'Property',Id='WINDOWS_BUILD')
+        node(os_build,'RegistrySearch',Id='WindowsBuildSearch',Root='HKLM',Key='SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion',Name='CurrentBuildNumber',Type='raw',Bitness='always64')
+        node(package,'Launch',Condition='VersionNT64 AND WINDOWS_BUILD >= 10240',Message='O ZAVIX Remote requer Windows 10 ou superior, 64 bits.')
+    else:
+        node(package,'Launch',Condition='VersionNT >= 601 AND (VersionNT <> 601 OR ServicePackLevel >= 1)',Message='O ZAVIX Remote de 32 bits requer Windows 7 SP1 ou superior.')
     for key,value in {'ARPPRODUCTICON':'ZavixIcon','ARPHELPLINK':'https://remote.zavix.app/download',
         'ARPURLINFOABOUT':'https://remote.zavix.app','ARPCONTACT':'robson@linvix.com.br','ARPINSTALLLOCATION':'[INSTALLFOLDER]'}.items():
         node(package,'Property',Id=key,Value=value)
     node(package,'Icon',Id='ZavixIcon',SourceFile=str(ROOT/'res/icon.ico'))
     node(package,'WixVariable',Id='WixUILicenseRtf',Value=str(ROOT/'res/zavix-msi/License.rtf'))
     E.SubElement(package,'{'+UI+'}WixUI',{'Id':'WixUI_InstallDir','InstallDirectory':'INSTALLFOLDER'})
-    pf = node(package,'StandardDirectory',Id='ProgramFiles64Folder')
+    pf = node(package,'StandardDirectory',Id='ProgramFiles64Folder' if arch == 'x64' else 'ProgramFilesFolder')
     directory = node(pf,'Directory',Id='INSTALLFOLDER',Name=app)
     feature = node(package,'Feature',Id='Client',Title=brand['product_name'],Level='1')
     directories = {'.':directory}
@@ -54,8 +57,9 @@ def build(bundle, output, wix, fixture=False):
         relative=path.relative_to(bundle)
         key=relative.as_posix()
         identity=hashlib.sha256(key.lower().encode()).hexdigest()[:24]
+        guid_key=key.lower() if arch == 'x64' else 'x86/'+key.lower()
         component=node(get_directory(relative.parent),'Component',Id='C'+identity,
-            Guid=str(uuid.uuid5(uuid.UUID(UPGRADE),key.lower())).upper(),Bitness='always64')
+            Guid=str(uuid.uuid5(uuid.UUID(UPGRADE),guid_key)).upper(),Bitness='always64' if arch == 'x64' else 'always32')
         file_id='AppExe' if path==exe else 'F'+identity
         node(component,'File',Id=file_id,Source=str(path),KeyPath='yes')
         node(feature,'ComponentRef',Id='C'+identity)
@@ -79,15 +83,17 @@ def build(bundle, output, wix, fixture=False):
     source=output.with_suffix('.wxs')
     E.indent(root)
     E.ElementTree(root).write(source,encoding='utf-8',xml_declaration=True)
-    subprocess.run([str(wix),'build',str(source),'-arch','x64','-culture','pt-BR','-ext','WixToolset.UI.wixext','-o',str(output)],check=True)
+    subprocess.run([str(wix),'build',str(source),'-arch',arch,'-culture','pt-BR','-ext','WixToolset.UI.wixext','-o',str(output)],check=True)
     return msi_version
 
 if __name__=='__main__':
     parser=argparse.ArgumentParser()
     parser.add_argument('--bundle',type=Path,default=ROOT/'dist')
     parser.add_argument('--wix',type=Path,required=True)
+    parser.add_argument('--arch',choices=['x86','x64'],default='x64')
     args=parser.parse_args()
     brand=json.loads((ROOT/'branding/zavix.json').read_text())
-    output=ROOT/'SignOutput'/f'ZAVIXRemote-{brand["version"]}.msi'
-    build(args.bundle.resolve(),output,args.wix.resolve())
-    build(args.bundle.resolve(),ROOT/'msi-test'/'previous-version.msi',args.wix.resolve(),fixture=True)
+    suffix='-x86' if args.arch == 'x86' else ''
+    output=ROOT/'SignOutput'/f'ZAVIXRemote-{brand["version"]}{suffix}.msi'
+    build(args.bundle.resolve(),output,args.wix.resolve(),arch=args.arch)
+    build(args.bundle.resolve(),ROOT/'msi-test'/'previous-version.msi',args.wix.resolve(),fixture=True,arch=args.arch)

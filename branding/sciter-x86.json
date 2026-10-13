@@ -1,0 +1,9 @@
+{
+  "repository": "https://github.com/c-smile/sciter-sdk",
+  "revision": "f33df075d9eb2f8d252cb88f1b2c8096e56197ed",
+  "path": "bin.win/x32/sciter.dll",
+  "bytes": 6036992,
+  "sha256": "285f3e6a051a7c61845cd7e4d2120781b6bdf411239f70a85c65b38a52d38f28",
+  "license_file": "branding/Sciter-LICENSE.htm",
+  "license_sha256": "a52733cc90fb112a730b67bbbe6fc1102fad644753af9bd584cab8ba0da3db49"
+}

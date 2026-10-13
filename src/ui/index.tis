@@ -4,7 +4,8 @@ stdout.println("is_xfce: ", is_xfce);
 
 // See default height in common.tis `msgbox()`.
 const msgbox_default_height = 180;
-const incoming_only_width = 180;
+const is_zavix = is_win && handler.get_app_name() == 'ZAVIXRemote';
+const incoming_only_width = is_zavix ? 280 : 180;
 
 const outgoing_only = handler.is_outgoing_only();
 const incoming_only = handler.is_incoming_only();
@@ -598,6 +599,18 @@ class MyIdMenu: Reactor.Component {
 
     function showAbout() {
         var name = handler.get_app_name();
+        if (is_zavix) {
+            msgbox("custom-nocancel-nook-hasclose", "Sobre ZAVIX Remote", <div style="line-height:2em">
+                <div>ZAVIX Remote — Windows 32 bits</div>
+                <div>Base RustDesk {handler.get_version()}</div>
+                <div .link .custom-event url="https://remote.zavix.app/privacidade">Privacidade, licença e código-fonte</div>
+                <div>Copyright © 2026 Purslane Tech Pte. Ltd.; modificações ZAVIX © 2026.</div>
+                <div .link .custom-event url="https://sciter.com/">This Application uses Sciter Engine (http://sciter.com/), copyright Terra Informatica Software, Inc.</div>
+            </div>, "", function(el) {
+                if (el && el.attributes) handler.open_url(el.attributes['url']);
+            }, 400, get_msgbox_width());
+            return;
+        }
         msgbox("custom-nocancel-nook-hasclose", translate("About") + " " + name, "<div style='line-height: 2em'> \
             <div>Version: " + handler.get_version() + " \
             <div>Fingerprint: " + handler.get_fingerprint() + " \
@@ -716,10 +729,10 @@ class App: Reactor.Component
                     <div>
                         {is_custom_client && handler.get_builtin_option("hide-powered-by-me") != "Y" ? <div .link #powered-by style="opacity:0.5;font-size:0.8em;text-decoration:underline">{translate('powered_by_me')}</div> : ""}
                         <div .title style="flow:horizontal; position:relative; height:1.6em; line-height:1.6em">
-                            <span>{translate('Your Desktop')}</span>
+                            <span>{is_zavix ? 'ZAVIX Remote' : translate('Your Desktop')}</span>
                             {outgoing_only ? <span .link #open-settings style="position:absolute; right:0; bottom:0; transform:scale(0.6); transform-origin:right bottom; opacity:0.85">{svg_menu}</span> : ""}
                         </div>
-                        <div .lighter-text>{outgoing_only ? translate('outgoing_only_desk_tip') : translate('desk_tip')}</div>
+                        <div .lighter-text>{is_zavix ? 'Informe seu ID ao atendente e aceite a solicitação neste computador.' : outgoing_only ? translate('outgoing_only_desk_tip') : translate('desk_tip')}</div>
                         {outgoing_only ? <div style="position:absolute; left:-10000px; top:-10000px; width:0; height:0; overflow:hidden"><MyIdMenu /></div> : ""}
                         {!outgoing_only && <div .your-desktop>
                             <MyIdMenu />
@@ -1056,6 +1069,9 @@ class PasswordArea: Reactor.Component {
     }
 
     function render() {
+        if (is_zavix && handler.get_option('approve-mode') == 'click') {
+            return <div .your-desktop><div>Modo assistido</div><div .lighter-text>O acesso depende da sua aprovação.</div></div>;
+        }
         var me = this;
         self.timer(1ms, function() { me.toggleMenuState() });
         return 

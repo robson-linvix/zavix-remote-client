@@ -162,6 +162,10 @@ impl SciterConnectionManager {
         crate::ui_interface::get_builtin_option(&key)
     }
 
+    fn get_app_name(&self) -> String {
+        crate::get_app_name()
+    }
+
     fn hide_cm(&self) -> bool {
         *crate::ui::cm::HIDE_CM.lock().unwrap()
     }
@@ -192,6 +196,7 @@ impl sciter::EventHandler for SciterConnectionManager {
         fn elevate_portable(i32);
         fn get_option(String);
         fn get_builtin_option(String);
+        fn get_app_name();
         fn hide_cm();
         fn get_supported_privacy_mode_impls();
     }

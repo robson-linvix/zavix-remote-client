@@ -4,6 +4,7 @@ var body;
 var connections = [];
 var show_chat = false;
 var show_elevation = true;
+var is_zavix = is_win && handler.get_app_name() == 'ZAVIXRemote';
 var is_privacy_mode_supported = handler.get_supported_privacy_mode_impls() != '[]';
 var allow_perm_change_in_accept_window =
     handler.get_builtin_option('enable-perm-change-in-accept-window') != 'N';
@@ -82,7 +83,7 @@ class Body: Reactor.Component
                 {c.port_forward ? <div>Port Forwarding: {c.port_forward}</div> : ""}
                 <div style="size:*"/>
                 <div .outer_buttons>
-                    {!auth && !disconnected && show_elevation_btn && show_accept_btn && !hide_elevate_button_in_accept_window ? <button #elevate_accept .control .elevate .button><span><span><span>{svg_elevate}</span><span>{translate('Accept')}</span></span></span></button> : "" }
+                    {!is_zavix && !auth && !disconnected && show_elevation_btn && show_accept_btn && !hide_elevate_button_in_accept_window ? <button #elevate_accept .control .elevate .button><span><span><span>{svg_elevate}</span><span>{translate('Accept')}</span></span></span></button> : "" }
                     {auth && !disconnected && show_elevation_btn ? <button #elevate .control .elevate .button><span><span><span>{svg_elevate}</span><span>{translate('Elevate')}</span></span></span></button> : "" }
                     <div .inner_buttons style={auth ? "display:none;":""}>
                         {!auth && show_accept_btn ? <button #accept .control .button>{translate('Accept')}</button> : "" }
@@ -193,6 +194,10 @@ class Body: Reactor.Component
         var { cid, connection } = this;
         checkClickTime(function() {
             connection.authorized = true;
+            if (is_zavix && handler.can_elevate() && show_elevation && !hide_elevate_button_in_accept_window && !connection.is_file_transfer && !connection.is_view_camera && !connection.is_terminal && connection.port_forward.length == 0) {
+                show_elevation = false;
+                handler.elevate_portable(cid);
+            }
             body.update();
             handler.authorize(cid);
             self.timer(30ms, function() {

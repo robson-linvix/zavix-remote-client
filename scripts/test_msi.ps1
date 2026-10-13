@@ -1,5 +1,6 @@
-param([Parameter(Mandatory=$true)][string]$Installer)
+param([Parameter(Mandatory=$true)][string]$Installer, [ValidateSet('x86','x64')][string]$Architecture = 'x64')
 $ErrorActionPreference = 'Stop'
+if (($Architecture -eq 'x86' -and [IntPtr]::Size -ne 4) -or ($Architecture -eq 'x64' -and [IntPtr]::Size -ne 8)) { throw 'Run lifecycle tests in PowerShell with the matching architecture' }
 $Installer = (Resolve-Path $Installer).Path
 $brand = Get-Content branding/zavix.json | ConvertFrom-Json
 $app = $brand.app_name
@@ -18,7 +19,7 @@ function Check-Installed {
     $process = Start-Process $exe -ArgumentList '--zavix-diagnostics' -PassThru -Wait -RedirectStandardOutput runtime-installed.json -RedirectStandardError runtime-installed-error.txt
     if ($process.ExitCode -ne 0) { throw 'Installed diagnostics failed' }
     $data = Get-Content runtime-installed.json | ConvertFrom-Json
-    if (-not $data.installed -or $data.approve_mode -ne 'click' -or $data.server -ne '187.77.241.190:21116' -or $data.api -ne 'https://remote.zavix.app' -or $data.version -ne $brand.version) { throw 'Installed native configuration or detection differs' }
+    if (-not $data.installed -or $data.architecture -ne $Architecture -or $data.approve_mode -ne 'click' -or $data.server -ne '187.77.241.190:21116' -or $data.api -ne 'https://remote.zavix.app' -or $data.version -ne $brand.version) { throw 'Installed native configuration or detection differs' }
     $service = Get-CimInstance Win32_Service -Filter "Name='$app'"
     if ($service.State -ne 'Running' -or $service.StartName -ne 'LocalSystem' -or $service.PathName -notlike "*$exe*--service*") { throw 'Installed service did not start with the intended binary' }
     if (-not (Test-Path (Join-Path ([Environment]::GetFolderPath('CommonDesktopDirectory')) 'ZAVIX Remote.lnk'))) { throw 'Desktop shortcut missing' }

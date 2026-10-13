@@ -1,5 +1,5 @@
 """Collect original license notices alongside the actual Windows payload."""
-import json, os, shutil, subprocess
+import argparse, json, os, shutil, subprocess
 from pathlib import Path
 
 root = Path(__file__).resolve().parents[1]
@@ -20,7 +20,12 @@ for package in metadata['packages']:
         target = legal / 'cargo' / (package['name'] + '-' + package['version'])
         target.mkdir(parents=True,exist_ok=True)
         for p in matches: shutil.copyfile(p,target / p.name)
-vcpkg = Path(os.environ['VCPKG_ROOT']) / 'installed' / 'x64-windows-static' / 'share'
+parser = argparse.ArgumentParser()
+parser.add_argument('--arch', choices=['x86','x64'], default='x64')
+args = parser.parse_args()
+vcpkg = Path(os.environ['VCPKG_ROOT']) / 'installed' / (args.arch+'-windows-static') / 'share'
+if args.arch == 'x86':
+    shutil.copyfile(root / 'branding/Sciter-LICENSE.htm', legal / 'Sciter-LICENSE.htm')
 for p in vcpkg.glob('*/copyright'):
     target = legal / 'vcpkg' / p.parent.name
     target.mkdir(parents=True,exist_ok=True)
