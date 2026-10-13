@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import '../../common.dart';
+import '../../models/platform_model.dart';
 import '../../models/server_model.dart';
 
 bool get isZavixManagedAndroid => isAndroid &&
@@ -78,7 +79,7 @@ class _ZavixAndroidPanelState extends State<ZavixAndroidPanel> {
       final request = http.Request('POST', Uri.parse('https://remote.zavix.app/api/android/diagnostics'));
       request.followRedirects = false;
       request.headers['Content-Type'] = 'application/json';
-      request.headers['Authorization'] = 'Basic ${base64Encode(utf8.encode('${widget.model.serverId.id}:${password.text}'))}';
+      request.headers['Authorization'] = 'Basic ${base64Encode(utf8.encode('${widget.model.serverId.text.replaceAll(' ', '')}:${password.text}'))}';
       if (snapshot == null) throw StateError("Diagnostic unavailable");
       request.body = snapshot;
       final response = await client.send(request).timeout(const Duration(seconds: 25));
@@ -107,7 +108,7 @@ class _ZavixAndroidPanelState extends State<ZavixAndroidPanel> {
           Text(widget.model.approveMode == 'password' ? 'Acesso não supervisionado' : 'Acesso assistido',
             style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: 8),
-          Text('ID do equipamento: ${widget.model.serverId.id}'),
+          Text('ID do equipamento: ${widget.model.serverId.text}'),
           Text(passwordSet ? 'Senha individual configurada.' : 'Defina uma senha exclusiva para este equipamento antes do primeiro acesso.'),
           Text('Captura: ${widget.model.mediaOk ? "disponível" : "permissão pendente"}'),
           Text('Controle: ${widget.model.inputOk ? "habilitado" : "permissão pendente"}'),
