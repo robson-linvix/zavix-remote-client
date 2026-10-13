@@ -14,6 +14,7 @@ import '../../consts.dart';
 import '../../models/platform_model.dart';
 import '../../models/server_model.dart';
 import 'home_page.dart';
+import '../widgets/zavix_android_panel.dart';
 
 class ServerPage extends StatefulWidget implements PageShape {
   @override
@@ -210,6 +211,7 @@ class _ServerPageState extends State<ServerPage> {
                       mainAxisAlignment: MainAxisAlignment.start,
                       children: [
                         buildPresetPasswordWarningMobile(),
+                        if (isZavixManagedAndroid) ZavixAndroidPanel(model: serverModel),
                         gFFI.serverModel.isStart
                             ? ServerInfo()
                             : ServiceNotRunningNotification(),
@@ -901,6 +903,12 @@ void androidChannelInit() {
           {
             gFFI.dialogManager.dismissAll();
             gFFI.serverModel.updateClientState();
+            break;
+          }
+        case "zavix_capture_unavailable":
+          {
+            bind.cmCloseConnection(connId: arguments as int);
+            showToast('Captura indisponível. Autorize a captura e encerre a assistência SUNMI antes do teste.');
             break;
           }
         case "on_state_changed":

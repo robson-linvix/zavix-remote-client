@@ -46,13 +46,20 @@ fn initialize(app_dir: &str, custom_client_config: &str) {
         *config::APP_DIR.write().unwrap() = app_dir.to_owned();
     }
     // core_main's load_custom_client does not work for flutter since it is only applied to its load_library in main.c
-    if custom_client_config.is_empty() {
-        crate::load_custom_client();
-    } else {
-        crate::read_custom_client(custom_client_config);
+    #[cfg(not(target_os = "android"))]
+    {
+        if custom_client_config.is_empty() {
+            crate::load_custom_client();
+        } else {
+            crate::read_custom_client(custom_client_config);
+        }
     }
     #[cfg(target_os = "android")]
     {
+        if let Err(err) = crate::zavix_android::initialize() {
+            eprintln!("ZAVIX Android configuration error: {}", err);
+            std::process::abort();
+        }
         // flexi_logger can't work when android_logger initialized.
         #[cfg(debug_assertions)]
         android_logger::init_once(
@@ -2958,6 +2965,10 @@ pub mod server_side {
         custom_client_config: JString,
     ) {
         log::debug!("startServer from jvm");
+        if let Err(err) = crate::zavix_android::initialize() {
+            log::error!("Android profile initialization failed: {err}");
+            return;
+        }
         let mut env = env;
         if let Ok(app_dir) = env.get_string(&app_dir) {
             *config::APP_DIR.write().unwrap() = app_dir.into();
@@ -2977,6 +2988,10 @@ pub mod server_side {
     #[no_mangle]
     pub unsafe extern "system" fn Java_ffi_FFI_startService(_env: JNIEnv, _class: JClass) {
         log::debug!("startService from jvm");
+        if let Err(err) = crate::zavix_android::initialize() {
+            log::error!("Android profile initialization failed: {err}");
+            return;
+        }
         config::Config::set_option("stop-service".into(), "".into());
         crate::rendezvous_mediator::reset_needs_deploy_notification();
         crate::rendezvous_mediator::RendezvousMediator::restart();

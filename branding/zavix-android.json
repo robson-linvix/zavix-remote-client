@@ -1,0 +1,42 @@
+{
+  "app_name": "ZAVIXRemote",
+  "product_name": "ZAVIX Remote",
+  "version": "1.1.0-piloto",
+  "settings": {
+    "custom-rendezvous-server": "187.77.241.190",
+    "relay-server": "187.77.241.190:21117",
+    "key": "obFDr1paz1EJm7xesg+DJkib+wDdPQQVRpiM9otlljo=",
+    "api-server": "https://remote.zavix.app",
+    "allow-auto-update": "N",
+    "verification-method": "use-permanent-password",
+    "approve-mode": "password",
+    "temporary-password-length": "10",
+    "enable-terminal": "N",
+    "enable-tunnel": "N",
+    "enable-camera": "N",
+    "enable-audio": "N",
+    "enable-lan-discovery": "N",
+    "allow-auto-record-incoming": "N"
+  },
+  "local": {
+    "lang": "pt-br",
+    "disable-floating-window": "Y"
+  },
+  "builtin": {
+    "hide-network-settings": "Y",
+    "hide-server-settings": "Y",
+    "hide-proxy-settings": "Y",
+    "hide-websocket-settings": "Y",
+    "disable-change-id": "Y",
+    "allow-deep-link-server-settings": "N",
+    "allow-deep-link-password": "N",
+    "use-raw-tcp-for-api": "N",
+    "zavix-android-managed": "Y"
+  },
+  "hard": {
+    "conn-type": "incoming",
+    "disable-tcp-listen": "Y",
+    "disable-account": "Y",
+    "disable-ab": "Y"
+  }
+}

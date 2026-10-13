@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">RustDesk</string>
-    <string name="accessibility_service_description">Allow other devices to control your phone using virtual touch, when RustDesk screen sharing is established</string>
-    <string name="foreground_service_special_use_subtype">Keeps the RustDesk remote desktop host available for authorized unattended connections and foreground notifications without starting screen capture before user approval.</string>
+    <string name="app_name">ZAVIX Remote</string>
+    <string name="accessibility_service_description">Permite ao atendente autorizado visualizar elementos da tela e executar toques, rolagem e digitação durante uma assistência ZAVIX Remote. Habilite apenas quando desejar receber controle remoto.</string>
+    <string name="foreground_service_special_use_subtype">Mantém disponível o atendimento remoto iniciado pelo usuário, com notificação visível, sem capturar a tela antes de sua autorização e sem iniciar no boot.</string>
 </resources>

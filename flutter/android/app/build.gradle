@@ -91,6 +91,8 @@ android {
         main.proto.includes += "message.proto"
     }
 
+    buildFeatures { buildConfig true }
+
     compileOptions {
         coreLibraryDesugaringEnabled true
         targetCompatibility JavaVersion.VERSION_1_8
@@ -98,15 +100,22 @@ android {
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId "com.carriez.flutter_hbb"
-        minSdkVersion 22
+        applicationId "app.zavix.remote"
+        buildConfigField "boolean", "ZAVIX_MANAGED", "true"
+        minSdkVersion 24
         targetSdkVersion 36
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
     }
 
     signingConfigs {
+      pilotManaged {
+        storeFile rootProject.file("pilot-signing.p12")
+        storeType "PKCS12"
+        storePassword System.getenv("ZAVIX_ANDROID_TEST_STORE_PASSWORD")
+        keyPassword System.getenv("ZAVIX_ANDROID_TEST_STORE_PASSWORD")
+        keyAlias "zavix-android-test"
+      }
       release {
         keyAlias keystoreProperties['keyAlias']
         keyPassword keystoreProperties['keyPassword']
@@ -115,15 +124,36 @@ android {
       }
     }
 
+    flavorDimensions "distribution"
+    productFlavors {
+        pilot {
+            dimension "distribution"
+            applicationIdSuffix ".pilot.t2mini"
+            versionNameSuffix "-piloto"
+            resValue "string", "app_name", "ZAVIX Remote T2 Mini (teste)"
+            signingConfig signingConfigs.pilotManaged
+        }
+        store {
+            dimension "distribution"
+            signingConfig signingConfigs.release
+        }
+    }
+
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig signingConfigs.release
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules'
         }
     }
+
+    sourceSets.main.res.srcDir(layout.buildDirectory.dir("generated/zavix-res"))
 }
+
+def generateZavixAndroidIcon = tasks.register("generateZavixAndroidIcon", Copy) {
+    from(rootProject.file("../../res/icon.png"))
+    into(layout.buildDirectory.dir("generated/zavix-res/drawable"))
+    rename { "zavix_logo.png" }
+}
+tasks.named("preBuild").configure { dependsOn(generateZavixAndroidIcon) }
 
 flutter {
     source '../..'

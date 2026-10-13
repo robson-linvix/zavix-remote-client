@@ -47,7 +47,7 @@ import java.nio.ByteBuffer
 import kotlin.math.max
 import kotlin.math.min
 
-const val DEFAULT_NOTIFY_TITLE = "RustDesk"
+const val DEFAULT_NOTIFY_TITLE = "ZAVIX Remote"
 const val DEFAULT_NOTIFY_TEXT = "Service is running"
 const val DEFAULT_NOTIFY_ID = 1
 const val NOTIFY_ID_OFFSET = 100
@@ -127,9 +127,16 @@ class MainService : Service() {
                     } else {
                         translate("Share screen")
                     }
+                    ZavixManagedAndroid.record(this, if (authorized) "client_authorized" else "client_requested")
                     if (authorized) {
                         if (!isFileTransfer && !isStart) {
-                            startCapture()
+                            val started = startCapture()
+                            if (BuildConfig.ZAVIX_MANAGED && !started) {
+                                Handler(Looper.getMainLooper()).post {
+                                    MainActivity.flutterMethodChannel?.invokeMethod("zavix_capture_unavailable", id)
+                                }
+                                return
+                            }
                         }
                         onClientAuthorizedNotification(id, type, username, peerId)
                     } else {
@@ -436,6 +443,7 @@ class MainService : Service() {
             return
         }
         Log.d(logTag, "MediaProjection stopped")
+        ZavixManagedAndroid.record(this, "projection_stopped")
         setMediaProjectionForegroundService(false)
         stopCapture()
         virtualDisplay?.release()
@@ -576,6 +584,7 @@ class MainService : Service() {
         }
         if (mediaProjection == null) {
             Log.w(logTag, "startCapture fail,mediaProjection is null")
+            ZavixManagedAndroid.record(this, "capture_unavailable")
             return false
         }
         captureRestartInVoiceCall = inVoiceCall
@@ -590,6 +599,7 @@ class MainService : Service() {
             startRawVideoRecorder(mediaProjection!!)
         }
         if (!videoStarted) {
+            ZavixManagedAndroid.record(this, "capture_failed")
             if (!captureRestartPending) {
                 captureRestartInVoiceCall = false
             }
@@ -609,6 +619,7 @@ class MainService : Service() {
         captureRestartInVoiceCall = false
         checkMediaPermission()
         _isStart = true
+        ZavixManagedAndroid.record(this, "capture_started")
         FFI.setFrameRawEnable("video",true)
         MainActivity.rdClipboardManager?.setCaptureStarted(_isStart)
         return true
@@ -634,6 +645,7 @@ class MainService : Service() {
         captureRestartInVoiceCall = false
         FFI.setFrameRawEnable("video",false)
         _isStart = false
+        ZavixManagedAndroid.record(this, "capture_stopped")
         MainActivity.rdClipboardManager?.setCaptureStarted(_isStart)
         // release video
         if (reuseVirtualDisplay) {

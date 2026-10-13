@@ -596,6 +596,8 @@ class _SettingsState extends State<SettingsPage> with WidgetsBindingObserver {
                 }
               }));
     }
+    if (bind.mainGetBuildinOption(key: 'zavix-android-assisted') != 'Y' &&
+                      bind.mainGetBuildinOption(key: 'zavix-android-managed') != 'Y') {
     enhancementsTiles.add(SettingsTile.switchTile(
         initialValue: _enableStartOnBoot,
         title: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -628,6 +630,7 @@ class _SettingsState extends State<SettingsPage> with WidgetsBindingObserver {
 
           gFFI.invokeMethod(AndroidChannel.kSetStartOnBootOpt, toValue);
         }));
+    }
 
     if (!bind.isCustomClient()) {
       enhancementsTiles.add(

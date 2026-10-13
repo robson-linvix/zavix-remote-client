@@ -1,0 +1,157 @@
+name: ZAVIX Remote Android pilot
+on:
+  workflow_dispatch:
+  push:
+    branches: [codex/android-t2mini-20261013]
+    paths:
+      - '.github/workflows/android-pilot.yml'
+      - 'branding/zavix-android.json'
+      - 'src/zavix_android.rs'
+      - 'src/lib.rs'
+      - 'src/flutter_ffi.rs'
+      - 'flutter/android/**'
+      - 'scripts/validate_android.py'
+      - 'scripts/test_android_profile.py'
+      - 'branding/android-test-certificate.sha256'
+      - 'flutter/lib/mobile/pages/server_page.dart'
+      - 'flutter/lib/mobile/widgets/zavix_android_panel.dart'
+permissions:
+  contents: read
+concurrency:
+  group: zavix-android-pilot-${{ github.ref }}
+  cancel-in-progress: false
+env:
+  RUST_VERSION: '1.75'
+  FLUTTER_VERSION: '3.24.5'
+  VCPKG_COMMIT_ID: 9e593bb18ea69cc5095e012465dcd675a822ed0d
+  VCPKG_BINARY_SOURCES: clear;files,/tmp/zavix-android-vcpkg-cache,readwrite
+jobs:
+  configuration:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+      - run: python3 scripts/test_android_profile.py
+  generate-bridge:
+    needs: configuration
+    uses: ./.github/workflows/bridge.yml
+  android:
+    name: Android pilot ${{ matrix.abi }}
+    needs: generate-bridge
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: armv7-linux-androideabi
+            abi: armeabi-v7a
+            flutter_target: android-arm
+            ndk_lib: arm-linux-androideabi
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          submodules: recursive
+      - name: Install build prerequisites
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang llvm-dev libclang-dev nasm ninja-build pkg-config libgtk-3-dev gcc-multilib g++-multilib openjdk-17-jdk-headless
+          python3 -m venv /tmp/zavix-android-build-tools
+          /tmp/zavix-android-build-tools/bin/pip install cmake==4.3.0
+          echo "/tmp/zavix-android-build-tools/bin" >> "$GITHUB_PATH"
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2
+        with:
+          channel: stable
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+      - name: Apply existing Flutter compatibility patch
+        run: |
+          cd "$(dirname "$(dirname "$(command -v flutter)")")"
+          git apply "$GITHUB_WORKSPACE/.github/patches/flutter_3.24.4_dropdown_menu_enableFilter.diff"
+      - uses: nttld/setup-ndk@ed92fe6cadad69be94a966a7ee3271275e62f779
+        id: ndk
+        with:
+          ndk-version: r28c
+          add-to-path: true
+      - uses: lukka/run-vcpkg@b1a0dd252f06b9e25b3c022a9a03bd7a427fb6a2
+        with:
+          vcpkgDirectory: /opt/artifacts/vcpkg
+          vcpkgGitCommitId: ${{ env.VCPKG_COMMIT_ID }}
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+        with:
+          name: bridge-artifact
+          path: ./
+      - name: Validate managed Android UI before native compilation
+        working-directory: flutter
+        run: |
+          flutter pub get
+          flutter analyze --no-pub --no-fatal-infos --no-fatal-warnings lib/mobile/widgets/zavix_android_panel.dart lib/mobile/pages/server_page.dart
+      - name: Build codec dependencies
+        env:
+          ANDROID_NDK_HOME: ${{ steps.ndk.outputs.ndk-path }}
+        run: bash flutter/build_android_deps.sh '${{ matrix.abi }}'
+      - uses: dtolnay/rust-toolchain@e97e2d8cc328f1b50210efc529dca0028893a2d9
+        with:
+          toolchain: ${{ env.RUST_VERSION }}
+          targets: ${{ matrix.target }}
+      - uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32
+        with:
+          prefix-key: zavix-android-pilot
+          key: ${{ matrix.target }}
+      - name: Compile native Android client
+        env:
+          ANDROID_NDK_HOME: ${{ steps.ndk.outputs.ndk-path }}
+          ANDROID_NDK_ROOT: ${{ steps.ndk.outputs.ndk-path }}
+          RUSTFLAGS: '-C link-arg=-Wl,-z,max-page-size=16384 -C link-arg=-Wl,-z,common-page-size=16384'
+        run: |
+          cargo install cargo-ndk --version 3.1.2 --locked
+          cargo ndk --platform 24 --target '${{ matrix.target }}' build --locked --release --lib --features flutter,hwcodec
+          mkdir -p 'flutter/android/app/src/main/jniLibs/${{ matrix.abi }}'
+          cp 'target/${{ matrix.target }}/release/liblibrustdesk.so' 'flutter/android/app/src/main/jniLibs/${{ matrix.abi }}/librustdesk.so'
+          cp "$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/${{ matrix.ndk_lib }}/libc++_shared.so" 'flutter/android/app/src/main/jniLibs/${{ matrix.abi }}/'
+      - name: Load protected stable Android test signer
+        env:
+          ZAVIX_ANDROID_TEST_KEYSTORE: ${{ secrets.ZAVIX_ANDROID_TEST_KEYSTORE }}
+        run: |
+          python3 - <<'PYKEY'
+          import base64,os
+          from pathlib import Path
+          value=os.environ.get('ZAVIX_ANDROID_TEST_KEYSTORE','')
+          if not value:raise RuntimeError('Android test signer is not configured')
+          Path('flutter/android/pilot-signing.p12').write_bytes(base64.b64decode(value,validate=True))
+          PYKEY
+      - name: Build Android pilot only
+        working-directory: flutter
+        env:
+          JAVA_HOME: /usr/lib/jvm/java-17-openjdk-amd64
+          ZAVIX_ANDROID_TEST_STORE_PASSWORD: ${{ secrets.ZAVIX_ANDROID_TEST_STORE_PASSWORD }}
+          GRADLE_OPTS: '-Dorg.gradle.jvmargs=-Xmx4g -Dorg.gradle.workers.max=2'
+        run: flutter build apk --release --flavor pilot --target-platform '${{ matrix.flutter_target }}' --split-per-abi --build-name 1.1.0 --build-number 3
+      - name: Verify APK identity and signature
+        run: |
+          ANDROID_BUILD_TOOLS="$ANDROID_HOME/build-tools/36.0.0"
+          APK="flutter/build/app/outputs/flutter-apk/app-${{ matrix.abi }}-pilot-release.apk"
+          "$ANDROID_BUILD_TOOLS/aapt" dump badging "$APK" | tee android-apk-identity.txt
+          test "$("$ANDROID_BUILD_TOOLS/aapt" dump badging "$APK" | head -1 | cut -d "'" -f2)" = app.zavix.remote.pilot.t2mini
+          "$ANDROID_BUILD_TOOLS/apksigner" verify --verbose --print-certs "$APK" > android-signature.txt
+          python3 - <<'PYVERIFY'
+          import re
+          from pathlib import Path
+          text=Path('android-signature.txt').read_text()
+          found=re.search(r'Signer #1 certificate SHA-256 digest: ([a-f0-9]+)',text)
+          assert found and found.group(1)==Path('branding/android-test-certificate.sha256').read_text().strip()
+          identity=Path('android-apk-identity.txt').read_text()
+          assert "versionName='1.1.0-piloto'" in identity and "sdkVersion:'24'" in identity
+          PYVERIFY
+          mkdir -p AndroidPilot
+          cp "$APK" 'AndroidPilot/ZAVIXRemote-1.1.0-piloto-${{ matrix.abi }}.apk'
+          cp android-apk-identity.txt android-signature.txt AndroidPilot/
+          sha256sum AndroidPilot/*.apk > AndroidPilot/SHA256SUMS.txt
+          git rev-parse HEAD > AndroidPilot/SOURCE_REVISION.txt
+      - name: Package corresponding sources and hashes
+        run: python3 scripts/package_android_pilot.py
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: ZAVIXRemote-Android-pilot-${{ matrix.abi }}
+          path: AndroidPilot/
+          if-no-files-found: error
+          retention-days: 14

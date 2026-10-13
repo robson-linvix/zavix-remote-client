@@ -14,10 +14,12 @@ class PermissionRequestTransparentActivity: Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        ZavixManagedAndroid.record(this, "projection_requested")
         Log.d(logTag, "onCreate PermissionRequestTransparentActivity: intent.action: ${intent.action}")
 
         when (intent.action) {
             ACT_REQUEST_MEDIA_PROJECTION -> {
+                ZavixConsent.screen(this, {
                 val mediaProjectionManager =
                     getSystemService(MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
                 val intent = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
@@ -28,6 +30,11 @@ class PermissionRequestTransparentActivity: Activity() {
                     mediaProjectionManager.createScreenCaptureIntent()
                 }
                 startActivityForResult(intent, REQ_REQUEST_MEDIA_PROJECTION)
+                }, {
+                    val receiver = intent.getParcelableExtra<ResultReceiver>(EXT_MEDIA_PROJECTION_RESULT_RECEIVER)
+                    if (receiver != null) receiver.send(RES_FAILED, null) else setResult(RES_FAILED)
+                    finish()
+                })
             }
             else -> finish()
         }
@@ -37,8 +44,10 @@ class PermissionRequestTransparentActivity: Activity() {
         super.onActivityResult(requestCode, resultCode, data)
         if (requestCode == REQ_REQUEST_MEDIA_PROJECTION) {
             if (resultCode == RESULT_OK && data != null) {
+                ZavixManagedAndroid.record(this, "projection_granted")
                 launchService(data)
             } else {
+                ZavixManagedAndroid.record(this, "projection_denied")
                 val resultReceiver =
                     intent.getParcelableExtra<ResultReceiver>(EXT_MEDIA_PROJECTION_RESULT_RECEIVER)
                 if (resultReceiver != null) {
@@ -57,6 +66,7 @@ class PermissionRequestTransparentActivity: Activity() {
         val serviceIntent = Intent(this, MainService::class.java)
         serviceIntent.action = ACT_INIT_MEDIA_PROJECTION_AND_SERVICE
         serviceIntent.putExtra(EXT_MEDIA_PROJECTION_RES_INTENT, mediaProjectionResultIntent)
+        serviceIntent.putExtra(EXT_INIT_FROM_BOOT, intent.getBooleanExtra(EXT_INIT_FROM_BOOT, false))
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             startForegroundService(serviceIntent)
