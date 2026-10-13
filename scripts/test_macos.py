@@ -51,6 +51,16 @@ try:
         crashes=sorted(crash_folder.glob(app_name+'*'),key=lambda p:p.stat().st_mtime)[-2:] if crash_folder.exists() else []
         for crash in crashes:
             print(crash.read_text(errors='replace')[:12000],flush=True)
+        install_log=command('sudo','tail','-n','140','/var/log/install.log',check=False)
+        print(install_log.stdout[-14000:],flush=True)
+        opened=command('/usr/bin/open','-n','-a',app,check=False)
+        print('LaunchServices diagnostics: '+str(opened.returncode)+' '+opened.stdout+opened.stderr,flush=True)
+        direct=subprocess.Popen([str(exe)],stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
+        try:
+            output,error=direct.communicate(timeout=8)
+        except subprocess.TimeoutExpired:
+            direct.terminate();output,error=direct.communicate(timeout=15)
+        print('Direct GUI diagnostics: '+str(direct.returncode)+' '+(output+error)[-12000:],flush=True)
         raise RuntimeError('Installer did not automatically launch Flutter; console UID='+console_uid+'; processes='+str(details))
     time.sleep(5)
     assert any(str(exe) in line and not any(flag in line for flag in ['--server','--cm','--tray','--zavix-diagnostics']) for line in command('/bin/ps','-axo','pid=,command=').stdout.splitlines())
