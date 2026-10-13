@@ -175,6 +175,12 @@ pub fn start(args: &mut [String]) {
         } else {
             inline::get_remote()
         };
+        #[cfg(windows)]
+        let html = if crate::get_app_name() == "ZAVIXRemote" {
+            html.replacen("<head>", "<head><meta charset=\"utf-8\">", 1)
+        } else {
+            html
+        };
         frame.load_html(html.as_bytes(), Some(page));
     }
     #[cfg(not(feature = "inline"))]
