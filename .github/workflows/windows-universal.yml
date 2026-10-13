@@ -1,0 +1,84 @@
+name: Assemble ZAVIX universal Windows installer
+'on':
+  workflow_dispatch:
+    inputs:
+      x86_run:
+        description: Successful x86 MSI build run ID
+        required: true
+        type: string
+      x64_run:
+        description: Successful x64 MSI build run ID
+        required: true
+        type: string
+permissions:
+  contents: read
+  actions: read
+env:
+  PYTHONUTF8: '1'
+jobs:
+  assemble:
+    runs-on: windows-2022
+    timeout-minutes: 30
+    steps:
+    - name: Checkout packaging source
+      uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+      with:
+        submodules: recursive
+    - name: Download checked x86 MSI and corresponding sources
+      uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+      with:
+        name: zavix-windows-x86-unsigned
+        path: inputs/x86
+        run-id: ${{ inputs.x86_run }}
+        github-token: ${{ github.token }}
+    - name: Download checked x64 MSI and corresponding sources
+      uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+      with:
+        name: zavix-windows-x64-unsigned
+        path: inputs/x64
+        run-id: ${{ inputs.x64_run }}
+        github-token: ${{ github.token }}
+    - name: Record actual build provenance
+      env:
+        GH_TOKEN: ${{ github.token }}
+        X86_RUN: ${{ inputs.x86_run }}
+        X64_RUN: ${{ inputs.x64_run }}
+      run: |
+        if ($env:X86_RUN -notmatch '^[0-9]+$' -or $env:X64_RUN -notmatch '^[0-9]+$') { throw 'Invalid run ID' }
+        gh api "repos/robson-linvix/zavix-remote-client/actions/runs/$env:X86_RUN" | Out-File -Encoding utf8 inputs/x86/build-provenance.json
+        if ($LASTEXITCODE -ne 0) { throw 'x86 provenance unavailable' }
+        gh api "repos/robson-linvix/zavix-remote-client/actions/runs/$env:X64_RUN" | Out-File -Encoding utf8 inputs/x64/build-provenance.json
+        if ($LASTEXITCODE -ne 0) { throw 'x64 provenance unavailable' }
+    - name: Install pinned WiX and native bootstrapper tools
+      run: |
+        dotnet tool install wix --tool-path .tools/wix --version 4.0.6
+        if ($LASTEXITCODE -ne 0) { throw 'WiX installation failed' }
+        ./.tools/wix/wix.exe extension add WixToolset.Bal.wixext/4.0.6
+        if ($LASTEXITCODE -ne 0) { throw 'WiX bootstrapper extension installation failed' }
+    - name: Verify inputs and build the universal x86 bootstrapper
+      run: |
+        python scripts/build_bundle.py --x86 inputs/x86 --x64 inputs/x64 --wix .tools/wix/wix.exe
+        if ($LASTEXITCODE -ne 0) { throw 'Universal packaging failed' }
+    - name: Execute final EXE and validate architecture selection and lifecycle
+      run: |
+        $version = (Get-Content branding/zavix.json | ConvertFrom-Json).version
+        ./scripts/test_bundle.ps1 -Installer "UniversalOutput/ZAVIXRemote-$version.exe"
+    - name: Upload universal distribution
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+      with:
+        name: zavix-windows-universal-unsigned
+        path: UniversalOutput/
+        if-no-files-found: error
+        retention-days: 14
+    - name: Upload final EXE diagnostics
+      if: always()
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+      with:
+        name: zavix-universal-validation
+        path: |
+          bundle-*.log
+          bundle-runtime.json
+          UniversalOutput/bundle-runtime-evidence.json
+          UniversalOutput/bundle.wxs
+        if-no-files-found: ignore
+        retention-days: 14
