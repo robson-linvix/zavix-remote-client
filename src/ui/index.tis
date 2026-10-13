@@ -728,6 +728,7 @@ class App: Reactor.Component
                     <div .left-pane style={incoming_only ? "width:*" : ""}>
                     <div>
                         {is_custom_client && handler.get_builtin_option("hide-powered-by-me") != "Y" ? <div .link #powered-by style="opacity:0.5;font-size:0.8em;text-decoration:underline">{translate('powered_by_me')}</div> : ""}
+                        {is_zavix ? <img src={handler.get_brand_logo()} style="width:216px; height:67px; margin:0 0 20px 0" /> : ""}
                         <div .title style={is_zavix ? "flow:horizontal; position:relative; height:auto; line-height:1.35em" : "flow:horizontal; position:relative; height:1.6em; line-height:1.6em"}>
                             <span style={is_zavix ? "width:*; white-space:normal" : ""}>{is_zavix ? 'Assistência Remota Especializada' : translate('Your Desktop')}</span>
                             {outgoing_only ? <span .link #open-settings style="position:absolute; right:0; bottom:0; transform:scale(0.6); transform-origin:right bottom; opacity:0.85">{svg_menu}</span> : ""}

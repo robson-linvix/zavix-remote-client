@@ -23,7 +23,11 @@ try {
     $runtime = Get-Content bundle-runtime.json | ConvertFrom-Json
     if ($runtime.architecture -ne 'x64' -or $runtime.client_ui -ne 'flutter' -or $runtime.version -ne $brand.version -or -not $runtime.installed -or $runtime.approve_mode -ne 'click' -or $runtime.server -ne '187.77.241.190:21116') { throw 'Final bundled runtime differs' }
     $service = Get-CimInstance Win32_Service -Filter "Name='ZAVIXRemote'"
-    if ($service.State -ne 'Running' -or $service.StartName -ne 'LocalSystem' -or $service.PathName -notlike "*$exe*--service*") { throw 'Bundled service differs' }
+    if ($service.StartMode -ne 'Auto' -or $service.State -ne 'Running' -or $service.StartName -ne 'LocalSystem' -or $service.PathName -notlike "*$exe*--service*") { throw 'Bundled service differs' }
+    Restart-Service 'ZAVIXRemote'
+    (Get-Service 'ZAVIXRemote').WaitForStatus('Running',[TimeSpan]::FromSeconds(30))
+    Start-Sleep -Seconds 10
+    if ((Get-Service 'ZAVIXRemote').Status -ne 'Running') { throw 'Service did not remain running after restart' }
     Remove-Item (Join-Path (Split-Path $exe) 'PRIVACY.md')
     Run-Bundle '/repair'
     if (-not (Test-Path (Join-Path (Split-Path $exe) 'PRIVACY.md'))) { throw 'Bundle repair did not restore payload' }

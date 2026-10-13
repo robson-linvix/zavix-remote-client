@@ -39,6 +39,16 @@ def build(bundle, output, wix, fixture=False, arch='x64'):
         'ARPURLINFOABOUT':'https://remote.zavix.app','ARPCONTACT':'robson@linvix.com.br','ARPINSTALLLOCATION':'[INSTALLFOLDER]'}.items():
         node(package,'Property',Id=key,Value=value)
     node(package,'Icon',Id='ZavixIcon',SourceFile=str(ROOT/'res/icon.ico'))
+    assets=ROOT/'branding'/('linvix' if app=='LinvixRemote' else 'zavix')
+    for key,name in [('WixUIBannerBmp','msi-banner.bmp'),('WixUIDialogBmp','msi-dialog.bmp')]:
+        node(package,'WixVariable',Id=key,Value=str(assets/name))
+    node(package,'Property',Id='WIXUI_EXITDIALOGOPTIONALCHECKBOXTEXT',Value='Abrir '+brand['product_name'])
+    node(package,'Property',Id='WIXUI_EXITDIALOGOPTIONALCHECKBOX',Value='1')
+    node(package,'Property',Id='WIXUI_EXITDIALOGOPTIONALTEXT',Value='Informe seu ID ao atendente e aceite a solicitação no aplicativo.')
+    node(package,'Property',Id='WixShellExecTarget',Value='[#AppExe]')
+    node(package,'CustomAction',Id='LaunchClient',BinaryRef='Wix4UtilCA_'+arch, DllEntry='WixShellExec',Impersonate='yes',Return='check')
+    finish=node(package,'UI')
+    node(finish,'Publish',Dialog='ExitDialog',Control='Finish',Event='DoAction',Value='LaunchClient',Order='1',Condition='WIXUI_EXITDIALOGOPTIONALCHECKBOX = 1 AND NOT Installed')
     node(package,'WixVariable',Id='WixUILicenseRtf',Value=str(ROOT/'res/zavix-msi/License.rtf'))
     E.SubElement(package,'{'+UI+'}WixUI',{'Id':'WixUI_InstallDir','InstallDirectory':'INSTALLFOLDER'})
     pf = node(package,'StandardDirectory',Id='ProgramFiles64Folder' if arch == 'x64' else 'ProgramFilesFolder')
@@ -74,16 +84,19 @@ def build(bundle, output, wix, fixture=False, arch='x64'):
                 ('MsiProductCode','[ProductCode]','string'),('BuildDate',build_date,'string')]:
                 node(state,'RegistryValue',Name=name,Value=value,Type=typ)
             node(component,'Shortcut',Id='DesktopShortcut',Directory='DesktopFolder',Name=brand['product_name'],
-                Advertise='yes',Icon='ZavixIcon',WorkingDirectory='INSTALLFOLDER')
+                Target='[#AppExe]',Icon='ZavixIcon',IconIndex='0',WorkingDirectory='INSTALLFOLDER')
             node(component,'Shortcut',Id='StartMenuShortcut',Directory='ProgramMenuFolder',Name=brand['product_name'],
-                Advertise='yes',Icon='ZavixIcon',WorkingDirectory='INSTALLFOLDER')
+                Target='[#AppExe]',Icon='ZavixIcon',IconIndex='0',WorkingDirectory='INSTALLFOLDER')
+            node(component,'Shortcut',Id='StartupTray',Directory='StartupFolder',Name=brand['product_name']+' Tray',
+                Target='[#AppExe]',Arguments='--tray',Icon='ZavixIcon',IconIndex='0',WorkingDirectory='INSTALLFOLDER')
+    node(package,'StandardDirectory',Id='StartupFolder')
     node(package,'StandardDirectory',Id='DesktopFolder')
     node(package,'StandardDirectory',Id='ProgramMenuFolder')
     output.parent.mkdir(parents=True,exist_ok=True)
     source=output.with_suffix('.wxs')
     E.indent(root)
     E.ElementTree(root).write(source,encoding='utf-8',xml_declaration=True)
-    subprocess.run([str(wix),'build',str(source),'-arch',arch,'-culture','pt-BR','-ext','WixToolset.UI.wixext','-o',str(output)],check=True)
+    subprocess.run([str(wix),'build',str(source),'-arch',arch,'-culture','pt-BR','-ext','WixToolset.UI.wixext','-ext','WixToolset.Util.wixext','-o',str(output)],check=True)
     return msi_version
 
 if __name__=='__main__':

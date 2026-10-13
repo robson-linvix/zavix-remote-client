@@ -85,6 +85,8 @@ pub fn start(args: &mut [String]) {
     #[cfg(windows)]
     allow_err!(sciter::set_options(sciter::RuntimeOptions::UxTheming(true)));
     frame.set_title(&crate::get_app_name());
+    #[cfg(windows)]
+    if crate::get_app_name() == "ZAVIXRemote" { frame.set_title("ZAVIX Remote"); }
     #[cfg(target_os = "macos")]
     crate::platform::delegate::make_menubar(frame.get_host(), args.is_empty());
     #[cfg(windows)]
@@ -474,6 +476,18 @@ impl UI {
         Value::from_iter(peers)
     }
 
+    fn get_brand_logo(&mut self) -> String {
+        #[cfg(windows)]
+        if crate::get_app_name() == "ZAVIXRemote" {
+            let logo = hbb_common::sodiumoxide::base64::encode(
+                include_bytes!("../branding/remote-logo.png"),
+                hbb_common::sodiumoxide::base64::Variant::Original,
+            );
+            return format!("data:image/png;base64,{logo}");
+        }
+        String::new()
+    }
+
     fn get_icon(&mut self) -> String {
         get_icon()
     }
@@ -755,6 +769,7 @@ impl sciter::EventHandler for UI {
         fn store_fav(Value);
         fn recent_sessions_updated();
         fn get_icon();
+        fn get_brand_logo();
         fn install_me(String, String);
         fn is_installed();
         fn get_supported_privacy_mode_impls();

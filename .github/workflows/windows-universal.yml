@@ -73,6 +73,10 @@ jobs:
       run: |
         $version = (Get-Content branding/zavix.json | ConvertFrom-Json).version
         ./scripts/test_bundle.ps1 -Installer "UniversalOutput/${env:CLIENT_APP}-$version.exe"
+    - name: Verify branded installer completion opens the GUI and service
+      run: |
+        $version = (Get-Content branding/zavix.json | ConvertFrom-Json).version
+        ./scripts/test_installer_ui.ps1 -Installer "UniversalOutput/${env:CLIENT_APP}-$version.exe"
     - name: Upload universal distribution
       uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
       with:
@@ -86,6 +90,10 @@ jobs:
       with:
         name: ${{ inputs.brand || 'zavix' }}-universal-validation
         path: |
+          installer-ui*.log
+          UniversalOutput/installer-*.png
+          UniversalOutput/installed-app.png
+          UniversalOutput/installer-ui-evidence.json
           bundle-*.log
           bundle-runtime.json
           UniversalOutput/bundle-runtime-evidence.json

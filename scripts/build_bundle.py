@@ -46,8 +46,11 @@ def build(x86,x64,wix):
     bundle=node(root,'Bundle',Name='ZAVIX Remote',Manufacturer='LINVIX SOFTWARES LTDA',Version=v,
                 UpgradeCode='5F8EA9B9-D7D4-44A4-9A18-2C54010A4E3F',Compressed='yes',IconSourceFile=str(ROOT/'res/icon.ico'),
                 AboutUrl='https://remote.zavix.app',HelpUrl='https://remote.zavix.app/download')
+    node(bundle,'Variable',Name='LaunchTarget',Type='formatted',Value='[ProgramFilesFolder]ZAVIXRemote\\ZAVIXRemote.exe')
+    node(bundle,'SetVariable',Id='LaunchX64',Variable='LaunchTarget',Type='formatted',Value='[ProgramFiles64Folder]ZAVIXRemote\\ZAVIXRemote.exe',Condition='VersionNT64 AND WindowsBuildNumber >= 10240')
     ba=node(bundle,'BootstrapperApplication')
     E.SubElement(ba,'{'+BAL+'}WixStandardBootstrapperApplication',{'Theme':'hyperlinkLicense','LicenseUrl':'https://remote.zavix.app/privacidade',
+        'ThemeFile':str(ROOT/'res/zavix-bundle/Theme.xml'),'LogoFile':str(ROOT/'branding'/('linvix' if brand['app_name']=='LinvixRemote' else 'zavix')/'installer-logo.png'),
         'LocalizationFile':str(ROOT/'res/zavix-bundle/pt-BR.wxl'),'ShowVersion':'yes','SuppressOptionsUI':'yes'})
     condition=E.SubElement(bundle,'{'+BAL+'}Condition',{'Message':'O ZAVIX Remote requer Windows 7 SP1, Windows 8/8.1, Windows 10 ou Windows 11.'})
     condition.set('Condition','VersionNT >= v6.1 AND (VersionNT <> v6.1 OR ServicePackLevel >= 1)')

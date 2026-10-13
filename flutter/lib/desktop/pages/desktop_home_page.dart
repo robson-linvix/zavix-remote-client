@@ -89,6 +89,23 @@ class _DesktopHomePageState extends State<DesktopHomePage>
         alignment: Alignment.center,
         child: loadLogo(),
       ),
+      if (isWindows && bind.mainGetAppNameSync() == 'ZAVIXRemote')
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 20, 20, 8),
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: Image.asset(
+              Theme.of(context).brightness == Brightness.dark
+                  ? 'assets/remote-logo-dark.png'
+                  : 'assets/remote-logo-light.png',
+              width: 220,
+              height: 68,
+              fit: BoxFit.contain,
+              alignment: Alignment.centerLeft,
+              semanticLabel: 'ZAVIX Remote',
+            ),
+          ),
+        ),
       buildTip(context),
       if (!isOutgoingOnly) buildIDBoard(context),
       if (!isOutgoingOnly) buildPasswordBoard(context),
