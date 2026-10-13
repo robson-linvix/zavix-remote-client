@@ -74,6 +74,7 @@ jobs:
         $version = (Get-Content branding/zavix.json | ConvertFrom-Json).version
         ./scripts/test_bundle.ps1 -Installer "UniversalOutput/${env:CLIENT_APP}-$version.exe"
     - name: Verify branded installer completion opens the GUI and service
+      shell: powershell
       run: |
         $version = (Get-Content branding/zavix.json | ConvertFrom-Json).version
         ./scripts/test_installer_ui.ps1 -Installer "UniversalOutput/${env:CLIENT_APP}-$version.exe"
