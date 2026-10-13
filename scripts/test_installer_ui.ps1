@@ -7,6 +7,7 @@ using System.Runtime.InteropServices;
 public class InstallerWindowCapture {
  [StructLayout(LayoutKind.Sequential)] public struct Rect { public int Left,Top,Right,Bottom; }
  [DllImport("user32.dll")] public static extern bool GetWindowRect(IntPtr h, out Rect r);
+ [DllImport("user32.dll")] public static extern IntPtr SendMessage(IntPtr h, uint message, IntPtr w, IntPtr l);
  [DllImport("user32.dll")] public static extern bool PrintWindow(IntPtr h, IntPtr dc, uint flags);
 }
 '@
@@ -24,8 +25,9 @@ function Wait-Control($window,[string]$name) {
  throw "Installer control unavailable: $name"
 }
 function Invoke-Control($control) {
- $pattern=$control.GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern)
- $pattern.Invoke()
+ $handle=[IntPtr]$control.Current.NativeWindowHandle
+ if($handle -eq [IntPtr]::Zero){throw 'Native installer control has no window handle'}
+ [InstallerWindowCapture]::SendMessage($handle,0xF5,[IntPtr]::Zero,[IntPtr]::Zero) | Out-Null
 }
 function Capture([IntPtr]$handle,[string]$name) {
  $rect=New-Object InstallerWindowCapture+Rect
@@ -57,8 +59,8 @@ try {
  if($process.MainWindowHandle -eq 0){throw 'Interactive installer has no window'}
  $window=[System.Windows.Automation.AutomationElement]::FromHandle($process.MainWindowHandle)
  $accept=Wait-Control $window 'Li e aceito os termos das licenças'
- $toggle=$accept.GetCurrentPattern([System.Windows.Automation.TogglePattern]::Pattern)
- if($toggle.Current.ToggleState -ne [System.Windows.Automation.ToggleState]::On){$toggle.Toggle()}
+ $checked=[InstallerWindowCapture]::SendMessage([IntPtr]$accept.Current.NativeWindowHandle,0xF0,[IntPtr]::Zero,[IntPtr]::Zero)
+ if($checked.ToInt64() -ne 1){Invoke-Control $accept}
  Capture $process.MainWindowHandle 'installer-welcome'
  Invoke-Control (Wait-Control $window 'Instalar')
  $finish=Wait-Control $window 'Concluir e abrir'
