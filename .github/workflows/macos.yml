@@ -29,6 +29,8 @@ jobs:
       - name: Select Xcode and trusted macOS brand
         run: |
           sudo xcode-select -s /Applications/Xcode_16.4.app/Contents/Developer
+          brew install nasm
+          echo "LIBCLANG_PATH=/Applications/Xcode_16.4.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib" >> "$GITHUB_ENV"
           python3 scripts/prepare_macos.py '${{ matrix.brand }}'
           python3 -c 'import json,os; b=json.load(open("macos-build/brand.json")); open(os.environ["GITHUB_ENV"],"a").write("CLIENT_APP="+b["app_name"]+"\nCLIENT_VERSION="+b["version"]+"\n")'
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
