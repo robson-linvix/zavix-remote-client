@@ -6,7 +6,7 @@
   <String Id="CheckingForUpdatesLabel" Value="Verificando atualizações" />
   <String Id="UpdateButton" Value="&amp;Atualizar para [WixStdBAUpdateAvailable]" />
   <String Id="InstallHeader" Value="Bem-vindo ao ZAVIX Remote" />
-  <String Id="InstallMessage" Value="O instalador seleciona o aplicativo adequado ao seu Windows. Clique em Instalar para continuar." />
+  <String Id="InstallMessage" Value="O instalador escolhe a versão adequada ao seu Windows. Clique em Instalar para começar." />
   <String Id="InstallMessageOptions" Value="Instale o ZAVIX Remote ou ajuste as opções antes de continuar." />
   <String Id="InstallVersion" Value="Versão [WixBundleVersion]" />
   <String Id="ConfirmCancelMessage" Value="Deseja cancelar a instalação?" />

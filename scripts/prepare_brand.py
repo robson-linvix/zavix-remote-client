@@ -8,7 +8,7 @@ FILES=['Cargo.toml','src/platform/windows.rs','src/zavix.rs','src/ui.rs','src/ui
  'flutter/lib/desktop/pages/desktop_setting_page.dart','flutter/lib/desktop/widgets/tabbar_widget.dart',
  'scripts/build_msi.py','scripts/build_bundle.py','scripts/package_release.py','scripts/validate_config.py',
  'scripts/test_windows.ps1','scripts/test_msi.ps1','scripts/test_bundle.ps1','scripts/test_sciter_startup.ps1','scripts/test_installer_ui.ps1',
- 'res/zavix-bundle/pt-BR.wxl','res/zavix-msi/License.rtf']
+ 'res/zavix-bundle/Theme.xml','res/zavix-bundle/pt-BR.wxl','res/zavix-msi/License.rtf']
 def prepare(edition):
  if edition=='zavix':
   assert json.loads((ROOT/'branding/zavix.json').read_text(encoding='utf-8'))['app_name']=='ZAVIXRemote'
@@ -17,6 +17,8 @@ def prepare(edition):
  assert json.loads((ROOT/'branding/zavix.json').read_text(encoding='utf-8'))['app_name']=='ZAVIXRemote','Use a clean checkout for each brand'
  for name in FILES:
   p=ROOT/name;s=p.read_text(encoding='utf-8')
+  if name=='res/zavix-bundle/Theme.xml':
+   s=s.replace('Foreground="EB6325"','Foreground="7B5E40"')
   if name=='flutter/windows/runner/Runner.rc':
    s=s.replace('VALUE "CompanyName", "ZAVIX"', 'VALUE "CompanyName", "LINVIX SOFTWARES LTDA"')
   if name=='flutter/lib/desktop/pages/desktop_setting_page.dart':
