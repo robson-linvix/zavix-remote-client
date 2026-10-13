@@ -268,6 +268,11 @@ class MainActivity : FlutterActivity() {
         flutterMethodChannel.setMethodCallHandler { call, result ->
             // make sure result will be invoked, otherwise flutter will await forever
             when (call.method) {
+                "zavix_enrollment_config" -> result.success(ZavixEnrollment.configuration(context))
+                "zavix_enrollment_saved" -> {
+                    ZavixEnrollment.acknowledge(context, call.arguments as? String ?: "")
+                    result.success(true)
+                }
                 "zavix_diagnostics" -> result.success(ZavixManagedAndroid.snapshot(context))
                 "zavix_enable_boot" -> result.success(ZavixManagedAndroid.enableBoot(context))
                 "zavix_diagnostic_event" -> {

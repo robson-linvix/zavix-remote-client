@@ -54,6 +54,7 @@ object ZavixManagedAndroid {
             if (path.exists() && path.length() <= 32768) JSONArray(path.readText()) else JSONArray()
         } catch (error: Exception) { JSONArray() }
         return JSONObject().put("schema", 1).put("app_version", BuildConfig.VERSION_NAME)
+            .put("serial", ZavixEnrollment.serial(context))
             .put("package", context.packageName).put("model", Build.MODEL).put("manufacturer", Build.MANUFACTURER)
             .put("android", Build.VERSION.RELEASE).put("sdk", Build.VERSION.SDK_INT)
             .put("abis", JSONArray(Build.SUPPORTED_ABIS.toList())).put("service_ready", MainService.isReady)

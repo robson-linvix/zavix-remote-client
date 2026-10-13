@@ -185,7 +185,7 @@ jobs:
           JAVA_HOME: /usr/lib/jvm/java-17-openjdk-amd64
           ZAVIX_ANDROID_TEST_STORE_PASSWORD: ${{ secrets.ZAVIX_ANDROID_TEST_STORE_PASSWORD }}
           GRADLE_OPTS: '-Dorg.gradle.jvmargs=-Xmx4g -Dorg.gradle.workers.max=2'
-        run: flutter build apk --release --flavor pilot --target-platform '${{ matrix.flutter_target }}' --split-per-abi --build-name 1.1.1 --build-number 4
+        run: flutter build apk --release --flavor pilot --target-platform '${{ matrix.flutter_target }}' --split-per-abi --build-name 1.2.0 --build-number 5
       - name: Verify APK identity and signature
         run: |
           ANDROID_BUILD_TOOLS="$ANDROID_HOME/build-tools/36.0.0"
@@ -200,10 +200,10 @@ jobs:
           found=re.search(r'Signer #1 certificate SHA-256 digest: ([a-f0-9]+)',text)
           assert found and found.group(1)==Path('branding/android-test-certificate.sha256').read_text().strip()
           identity=Path('android-apk-identity.txt').read_text()
-          assert "versionName='1.1.1-piloto'" in identity and "sdkVersion:'24'" in identity
+          assert "versionName='1.2.0-piloto'" in identity and "sdkVersion:'24'" in identity
           PYVERIFY
           mkdir -p AndroidPilot
-          cp "$APK" 'AndroidPilot/ZAVIXRemote-1.1.1-piloto-${{ matrix.abi }}.apk'
+          cp "$APK" 'AndroidPilot/ZAVIXRemote-1.2.0-piloto-${{ matrix.abi }}.apk'
           cp android-apk-identity.txt android-signature.txt AndroidPilot/
           sha256sum AndroidPilot/*.apk > AndroidPilot/SHA256SUMS.txt
           git rev-parse HEAD > AndroidPilot/SOURCE_REVISION.txt

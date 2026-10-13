@@ -12,6 +12,9 @@ import android.provider.Settings
 class ZavixProvisionReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         if (!BuildConfig.ZAVIX_MANAGED || intent.action != "app.zavix.remote.MDM_PREPARE") return
+        val serial = intent.getStringExtra("serial")
+        val ticket = intent.getStringExtra("enrollment_ticket")
+        if (serial != null && ticket != null) ZavixEnrollment.prepare(context, serial, ticket)
         if (Build.VERSION.SDK_INT > Build.VERSION_CODES.P) {
             resultCode = 2
             resultData = "unsupported_android"

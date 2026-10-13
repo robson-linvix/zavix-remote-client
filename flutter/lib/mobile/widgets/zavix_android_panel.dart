@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import '../../common.dart';
 import '../../models/platform_model.dart';
 import '../../models/server_model.dart';
+import 'zavix_android_enrollment.dart';
 
 bool get isZavixManagedAndroid => isAndroid &&
     bind.mainGetBuildinOption(key: 'zavix-android-managed') == 'Y';
@@ -18,6 +19,23 @@ class ZavixAndroidPanel extends StatefulWidget {
 class _ZavixAndroidPanelState extends State<ZavixAndroidPanel> {
   bool _sending = false;
   String _message = '';
+  String _serial = '', _enrollmentMessage = '';
+  late final ZavixAndroidEnrollment _enrollment;
+
+  @override
+  void initState() {
+    super.initState();
+    _enrollment = ZavixAndroidEnrollment(widget.model, (serial, status) {
+      if (mounted) setState(() {
+        if (serial.isNotEmpty) _serial = serial;
+        _enrollmentMessage = status;
+      });
+    });
+    _enrollment.start();
+  }
+
+  @override
+  void dispose() { _enrollment.dispose(); super.dispose(); }
 
   Future<void> _setPassword() async {
     final password = TextEditingController();
@@ -39,8 +57,9 @@ class _ZavixAndroidPanelState extends State<ZavixAndroidPanel> {
         if (mounted) setState(() { _message = 'Use pelo menos 12 caracteres e confirme a mesma senha.'; });
       } else {
         final ok = await bind.mainSetPermanentPasswordWithResult(password: password.text);
+        final synced = ok && await _enrollment.syncPassword(password.text);
         widget.model.updatePasswordModel();
-        if (mounted) setState(() { _message = ok ? 'Senha salva neste equipamento.' : 'Não foi possível salvar a senha.'; });
+        if (mounted) setState(() { _message = ok ? (synced ? 'Senha salva e sincronizada com o painel.' : 'Senha salva neste equipamento. Atualize também o portal.') : 'Não foi possível salvar a senha.'; });
       }
     }
     password.clear();confirmation.clear();password.dispose();confirmation.dispose();
@@ -59,7 +78,10 @@ class _ZavixAndroidPanelState extends State<ZavixAndroidPanel> {
 
   Future<void> _sendDiagnostics() async {
     final password = TextEditingController();
-    final accepted = await showDialog<bool>(context: context, builder: (context) => AlertDialog(
+    final cfgRaw = await gFFI.invokeMethodWithResult<String>('zavix_enrollment_config');
+    final agentToken = cfgRaw == null ? '' : (jsonDecode(cfgRaw)['token'] as String? ?? '');
+    if (!mounted) { password.dispose(); return; }
+    final accepted = agentToken.isNotEmpty || (await showDialog<bool>(context: context, builder: (context) => AlertDialog(
       title: const Text('Enviar diagnóstico'),
       content: Column(mainAxisSize: MainAxisSize.min, children: [
         const Text('Informe a senha de acesso cadastrada para este equipamento no portal. Os logs serão enviados a robson@linvix.com.br.'),
@@ -68,8 +90,8 @@ class _ZavixAndroidPanelState extends State<ZavixAndroidPanel> {
       ]),
       actions: [TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancelar')),
         FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('Enviar'))],
-    ));
-    if (accepted != true || password.text.isEmpty) { password.clear(); password.dispose(); return; }
+    ))) == true;
+    if (!accepted || (agentToken.isEmpty && password.text.isEmpty)) { password.clear(); password.dispose(); return; }
     if (!mounted) { password.clear(); password.dispose(); return; }
     setState(() { _sending = true; _message = ''; });
     final client = http.Client();
@@ -79,7 +101,7 @@ class _ZavixAndroidPanelState extends State<ZavixAndroidPanel> {
       final request = http.Request('POST', Uri.parse('https://remote.zavix.app/api/android/diagnostics'));
       request.followRedirects = false;
       request.headers['Content-Type'] = 'application/json';
-      request.headers['Authorization'] = 'Basic ${base64Encode(utf8.encode('${widget.model.serverId.text.replaceAll(' ', '')}:${password.text}'))}';
+      request.headers['Authorization'] = agentToken.isNotEmpty ? 'Bearer $agentToken' : 'Basic ${base64Encode(utf8.encode('${widget.model.serverId.text.replaceAll(' ', '')}:${password.text}'))}';
       if (snapshot == null) throw StateError("Diagnostic unavailable");
       request.body = snapshot;
       final response = await client.send(request).timeout(const Duration(seconds: 25));
@@ -109,6 +131,8 @@ class _ZavixAndroidPanelState extends State<ZavixAndroidPanel> {
             style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: 8),
           Text('ID do equipamento: ${widget.model.serverId.text}'),
+          if (_serial.isNotEmpty) Text('Número de série: $_serial'),
+          if (_enrollmentMessage.isNotEmpty) Text(_enrollmentMessage),
           Text(passwordSet ? 'Senha individual configurada.' : 'Defina uma senha exclusiva para este equipamento antes do primeiro acesso.'),
           Text('Captura: ${widget.model.mediaOk ? "disponível" : "permissão pendente"}'),
           Text('Controle: ${widget.model.inputOk ? "habilitado" : "permissão pendente"}'),
