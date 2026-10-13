@@ -22,4 +22,10 @@ O pacote inclui libyuv e seu aviso de licença. Validar dependências no contain
 
 Não entregar APK com senha comum. Atualização assinada preserva a senha individual e os dados do aparelho. Android mais recente retorna `unsupported_android`; requer homologação do fabricante/MDM e não recebe essas concessões automaticamente.
 
+## Cadastro automático 1.2.0
+
+O receiver protegido recebe apenas um ticket efêmero por serial, nunca uma senha fixa. O APK lê série/modelo e se registra quando aberto; o servidor confere o ticket e vincula o cadastro ao ID remoto. Equipamentos existentes preservam suas credenciais. Equipamentos novos recebem senha individual, com confirmação antes de liberar a conexão. Uma chave individual no armazenamento interno sem backup atualiza presença/estados e permite os próprios diagnósticos; não administra outros dispositivos.
+
+Em Android 7, o serial é lido de `Build.SERIAL`. Em versões restritas, usa o serial conferido no MDM, recusando conflitos com o valor de hardware quando disponível. `MainActivity` possui dois hooks de canal para ler configuração e confirmar a chave; o novo módulo Flutter cuida do registro/heartbeat e sincronismo de senha. O painel só inclui estado/serial e inicia/encerra esse módulo. O diagnóstico acrescenta apenas o campo serial. Sem alteração no núcleo Rust ou nas APIs FFI existentes; APK 1.2.0/código 1005 reutiliza bibliotecas apenas após a verificação da mesma árvore Rust.
+
 Superfície adicional: `AndroidManifest.xml` registra apenas esse receiver com permissão administrativa; o restante do fluxo manual e de boot permanece intacto. Workflow Android passa a gerar versão 1.1.1, código 1004, e pode reaproveitar bibliotecas de um APK assinado somente após conferir árvore Rust idêntica e certificado. O arquivo de fontes correspondente acompanha o APK.
