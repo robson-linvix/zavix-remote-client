@@ -133,6 +133,12 @@ passou e ARM64 avançou até R8/lint, mas falhou com `Java heap space`.
 O workflow exclusivo Android agora reserva heap de 4 GB e limita a dois workers
 nesse passo, sem mudar `gradle.properties`, desativar lint/R8 ou afetar o build
 Windows. A próxima execução ainda precisa comprovar o APK final.
+Na execução `38332085902` (fonte `6462401`), ARM64 falhou no download do NDK
+r28c (`aborted`, após as tentativas da action), antes de compilar. ARMv7 passou
+pelo download e estava compilando o cliente nativo. Uma tentativa de reexecutar
+somente o job ARM64 foi recusada pelo GitHub enquanto a execução seguia ativa;
+aguardar o resultado ARMv7 e repetir somente o job necessário, sem mudar NDK,
+desabilitar verificações ou iniciar execução duplicada.
 
 Antes da loja: chave definitiva protegida e backup, Play App Signing, package
 confirmado, AAB de release validado, privacidade pública e dentro do app,
