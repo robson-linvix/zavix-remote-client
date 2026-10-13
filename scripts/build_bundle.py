@@ -36,7 +36,8 @@ def checked(folder,arch):
 def build(x86,x64,wix):
     a,pa=checked(x86,'x86');b,pb=checked(x64,'x64')
     brand=json.loads((ROOT/'branding/zavix.json').read_text())
-    assert a['version']==b['version']==brand['version'] and a['revision']==b['revision']
+    assert a['version']==b['version']==brand['version']
+    revisions={'x86':a['revision'],'x64':b['revision']}
     v=a['version'];out=ROOT/'UniversalOutput';out.mkdir(exist_ok=True)
     for arch,folder,m in [('x86',x86,a),('x64',x64,b)]:
         item=next(f for f in m['files'] if f['name'].endswith('.msi'))
@@ -59,7 +60,7 @@ def build(x86,x64,wix):
     exe=out/f'ZAVIXRemote-{v}.exe'
     subprocess.run([str(wix),'build',str(source),'-arch','x86','-ext','WixToolset.Bal.wixext','-o',str(exe)],check=True)
     package_revision=subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip()
-    report={'product':'ZAVIX Remote','version':v,'compiled_revision':a['revision'],'package_revision':package_revision,
+    report={'product':'ZAVIX Remote','version':v,'compiled_revision':a['revision'],'compiled_revisions':revisions,'package_revision':package_revision,
         'builds':{'x86':{'id':pa['id'],'revision':pa['head_sha']},'x64':{'id':pb['id'],'revision':pb['head_sha']}},
         'selection':{'x86':'Windows 7/8 on x86 or x64; Windows 10 x86','x64':'Windows 10/11 x64'},
         'old_windows_real_validation':'pending','signed':False}
@@ -80,7 +81,7 @@ def build(x86,x64,wix):
                 t.add(p,arcname='ZAVIXRemote-source/packaging/'+name)
         t.add(out/'build-provenance.json',arcname='ZAVIXRemote-source/build-provenance.json')
     files=[exe,out/f'ZAVIXRemote-{v}-x86.msi',out/f'ZAVIXRemote-{v}-x64.msi',archive]
-    manifest={'product':'ZAVIX Remote','version':v,'upstream':'1.5.0','revision':a['revision'],'package_revision':package_revision,
+    manifest={'product':'ZAVIX Remote','version':v,'upstream':'1.5.0','revision':a['revision'],'compiled_revisions':revisions,'package_revision':package_revision,
         'signed':False,'mode':'assisted','package':'exe','installer':True,'architectures':['x86','x64'],
         'files':[{'name':p.name,'bytes':p.stat().st_size,'sha256':hashlib.sha256(p.read_bytes()).hexdigest()} for p in files]}
     (out/'manifest.json').write_text(json.dumps(manifest,indent=2)+'\n')

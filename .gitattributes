@@ -1,1 +1,4 @@
 * text=auto
+
+# Keep the pinned vendor notice byte-for-byte on Windows checkouts.
+branding/Sciter-LICENSE.htm -text
