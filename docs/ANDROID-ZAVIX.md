@@ -1,4 +1,4 @@
-# ZAVIX Remote Android — piloto assistido
+# ZAVIX Remote Android — piloto e acesso corporativo
 
 ## Estado em 12/10/2026
 
@@ -9,6 +9,11 @@ não homologado em aparelho real.
 O proprietário autorizou iniciar a versão Android e informou SUNMI D2 Mini
 com Play Store como primeiro equipamento. Confirmar versão do Android,
 arquitetura, firmware e possibilidade de habilitar acessibilidade nesse aparelho.
+Depois esclareceu que o objetivo é acesso **não supervisionado**, pois os
+terminais normalmente não têm operador presente. Aceita uma configuração
+inicial autorizada, preferencialmente remota, e informou possuir acesso SUNMI
+para distribuição pela loja aos equipamentos. A versão exata Android/SUNMI OS
+ainda não foi fornecida. A base assistida abaixo não atende sozinha ao objetivo.
 
 Nenhum workflow, certificado, chave, perfil ou arquivo de marca do Windows
 foi alterado. Não substituir o instalador Windows ou os downloads de produção.
@@ -56,6 +61,35 @@ protocolo nativo ainda não está homologada. Não prometer que todo acesso
 nativo externo é tecnicamente impedido. O aceite local continua obrigatório.
 O esquema `zavixremote` é reservado no manifesto; integração de links de
 atendimento não está implementada nesse piloto.
+
+## Caminho não supervisionado — pendente de firmware e homologação
+
+Distribuir o APK pelo SUNMI DMP não comprova autorização para captura ou
+controle por um aplicativo terceiro. A SUNMI documenta distribuição em grupos,
+controle remoto próprio e APIs de integração; ainda confirmar na conta/firmware
+quais capacidades estão disponíveis ao ZAVIX. Não confundir o controle remoto
+nativo do DMP com integração já implementada no nosso protocolo.
+
+No AOSP Android 7.1 e 8.1, o diálogo de captura possui uma opção para lembrar
+a autorização concedida pelo usuário. Quando essa autorização existe, o próprio
+sistema pode emitir uma nova projeção sem repetir o diálogo. É um caminho
+legítimo a testar no firmware SUNMI, não uma garantia para todo Android 7+.
+Não conceder AppOps por ADB/root nem reaproveitar um token de captura inválido.
+Android recente tem regras diferentes, incluindo consentimento por sessão.
+
+O perfil futuro deverá ser opcional, provisionado explicitamente, com credencial
+individual protegida, revogação e registro de acesso. Preservar o perfil assistido.
+Validar reinício, encerramento do processo, reconexão e revogação antes de
+anunciar operação sem operador. A inicialização JNI direta também deverá aplicar
+o perfil Android antes de iniciar o servidor, não depender apenas do Flutter.
+O certificado de desenvolvimento efêmero do piloto não serve para distribuição
+em lote: reinstalar pode perder permissões. Definir assinatura estável protegida
+antes do provisionamento permanente. Não distribuir na frota nesta etapa.
+
+Fontes: [SUNMI DMP](https://www.sunmi.com/en/partner/),
+[diálogo AOSP 7.1](https://android.googlesource.com/platform/frameworks/base/+/android-7.1.2_r39/packages/SystemUI/src/com/android/systemui/media/MediaProjectionPermissionActivity.java),
+[diálogo AOSP 8.1](https://android.googlesource.com/platform/frameworks/base/+/android-8.1.0_r81/packages/SystemUI/src/com/android/systemui/media/MediaProjectionPermissionActivity.java),
+[MediaProjection atual](https://developer.android.com/media/grow/media-projection).
 
 ## Homologação requerida
 
