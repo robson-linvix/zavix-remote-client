@@ -27,7 +27,7 @@ jobs:
 
         python -c ''from pathlib import Path; paths=Path("packaging-changes.txt").read_text().splitlines(); assert all(p.startswith(("scripts/",
         ".github/workflows/", "branding/WindowInjection-")) or p in ("THIRD-PARTY-LICENSES.md", "README.md", "README-RUSTDESK.md",
-        "BUILD-ZAVIX.md") for p in paths), paths''
+        "BUILD-ZAVIX.md", "CODE_SIGNING_POLICY.md", "PRIVACY.md") for p in paths), paths''
 
         '
     - name: Download compiled EXE and corresponding sources
