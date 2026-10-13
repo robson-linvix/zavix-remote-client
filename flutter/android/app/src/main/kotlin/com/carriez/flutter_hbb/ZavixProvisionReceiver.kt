@@ -1,11 +1,9 @@
 package com.carriez.flutter_hbb
 
-import android.app.AppOpsManager
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.os.Build
-import android.os.Process
 import android.provider.Settings
 
 /** Explicit administrative enrollment; the manifest requires the shell/system DUMP permission. */
@@ -23,9 +21,8 @@ class ZavixProvisionReceiver : BroadcastReceiver() {
         val component = "${context.packageName}/com.carriez.flutter_hbb.InputService"
         val services = Settings.Secure.getString(context.contentResolver,
             Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES).orEmpty().split(':')
-        val ops = context.getSystemService(Context.APP_OPS_SERVICE) as AppOpsManager
-        if (component !in services || ops.checkOpNoThrow("android:project_media",
-                Process.myUid(), context.packageName) != AppOpsManager.MODE_ALLOWED) {
+        // Android 7 has no PROJECT_MEDIA string app-op. MediaProjection itself enforces capture consent.
+        if (component !in services) {
             resultCode = 3
             resultData = "permissions_pending"
             return
