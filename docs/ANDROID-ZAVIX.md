@@ -78,6 +78,17 @@ proprietário, pendente de D-U-N-S. Dados empresariais não são guardados neste
 repositório público. Solicitação gratuita do D-U-N-S autorizada pelo proprietário.
 Depois, autorizou consultar o preço de emissão acelerada no canal oficial,
 sem contratar. Nenhum serviço pago ou inscrição Google Play foi contratado.
+O chat oficial da CIAL confirmou recebimento dos dados para retorno de consultor
+em até 3 horas úteis sobre a opção expressa. Isso é um **contato comercial**,
+não comprovação de emissão do D-U-N-S, contratação ou aprovação da conta Google.
+Emissão gratuita não foi confirmada como protocolada nesse fluxo. O proprietário
+optou por aguardar o retorno. A conta Google continua pendente de D-U-N-S.
+
+Validação inicial: três testes do perfil passaram e YAML do workflow foi
+validado. Compilação completa em andamento na execução
+`38328301290`; nenhuma conclusão de compatibilidade ou APK pronto pode ser
+inferida desses testes estáticos. A primeira execução `38328227765` foi cancelada
+por esta frente para incorporar a main Windows atual antes de continuar.
 
 Antes da loja: chave definitiva protegida e backup, Play App Signing, package
 confirmado, AAB de release validado, privacidade pública e dentro do app,
