@@ -907,7 +907,6 @@ void androidChannelInit() {
           }
         case "zavix_capture_unavailable":
           {
-            bind.cmCloseConnection(connId: arguments as int);
             showToast('Captura indisponível. Autorize a captura e encerre a assistência SUNMI antes do teste.');
             break;
           }

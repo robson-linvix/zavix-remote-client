@@ -2998,6 +2998,11 @@ pub mod server_side {
     }
 
     #[no_mangle]
+    pub unsafe extern "system" fn Java_ffi_FFI_closeConnection(_env: JNIEnv, _class: JClass, conn_id: i32) {
+        super::cm_close_connection(conn_id);
+    }
+
+    #[no_mangle]
     pub unsafe extern "system" fn Java_ffi_FFI_translateLocale(
         env: JNIEnv,
         _class: JClass,

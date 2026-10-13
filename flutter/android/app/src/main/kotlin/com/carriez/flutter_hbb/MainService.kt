@@ -132,6 +132,7 @@ class MainService : Service() {
                         if (!isFileTransfer && !isStart) {
                             val started = startCapture()
                             if (BuildConfig.ZAVIX_MANAGED && !started) {
+                                FFI.closeConnection(id)
                                 Handler(Looper.getMainLooper()).post {
                                     MainActivity.flutterMethodChannel?.invokeMethod("zavix_capture_unavailable", id)
                                 }

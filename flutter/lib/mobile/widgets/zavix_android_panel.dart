@@ -45,6 +45,17 @@ class _ZavixAndroidPanelState extends State<ZavixAndroidPanel> {
     password.clear();confirmation.clear();password.dispose();confirmation.dispose();
   }
 
+  Future<void> _viewDiagnostics() async {
+    final snapshot = await gFFI.invokeMethodWithResult<String>('zavix_diagnostics');
+    if (!mounted || snapshot == null) return;
+    await showDialog<void>(context: context, builder: (context) => AlertDialog(
+      title: const Text('Diagnóstico local'),
+      content: SizedBox(width: 600, height: 400, child: SingleChildScrollView(
+        child: SelectableText(const JsonEncoder.withIndent('  ').convert(jsonDecode(snapshot))))),
+      actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('Fechar'))],
+    ));
+  }
+
   Future<void> _sendDiagnostics() async {
     final password = TextEditingController();
     final accepted = await showDialog<bool>(context: context, builder: (context) => AlertDialog(
@@ -108,6 +119,7 @@ class _ZavixAndroidPanelState extends State<ZavixAndroidPanel> {
               if (mounted) setState(() { _message = ok == true ?
                 'Retorno após reinício habilitado. Teste a autorização lembrada neste SUNMI.' : 'Configure as permissões antes de habilitar o retorno.'; });
             } : null, child: const Text('Habilitar retorno após reinício')),
+            OutlinedButton(onPressed: _viewDiagnostics, child: const Text('Ver logs')),
             FilledButton(onPressed: _sending ? null : _sendDiagnostics,
               child: Text(_sending ? 'Enviando…' : 'Enviar logs')),
           ]),
