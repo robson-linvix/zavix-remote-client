@@ -38,21 +38,21 @@ function Capture([IntPtr]$handle,[string]$name) {
  $bitmap.Save((Join-Path $PWD "UniversalOutput/$name.png"),[Drawing.Imaging.ImageFormat]::Png)
  $graphics.Dispose();$bitmap.Dispose()
 }
-$legacyRoot=Join-Path $env:TEMP ('remote-installer-legacy-ui-'+$app)
-if(Test-Path $legacyRoot){throw 'Legacy GUI staging already exists'}
+$legacyExe=$null
+$legacyMsi=(Resolve-Path "UniversalOutput/$app-$($brand.version)-x86.msi").Path
 try {
- $legacyMsi=(Resolve-Path "UniversalOutput/$app-$($brand.version)-x86.msi").Path
- $extract=Start-Process msiexec.exe -ArgumentList @('/a',"`"$legacyMsi`"",'/qn',"TARGETDIR=`"$legacyRoot`"",'/l*v','installer-ui-legacy.log') -Wait -PassThru
- if($extract.ExitCode -ne 0){throw 'Legacy MSI extraction failed'}
- $legacyExe=Get-ChildItem $legacyRoot -Recurse -Filter "$app.exe" | Select-Object -First 1
- if(-not $legacyExe){throw 'Legacy GUI payload missing'}
+ $installLegacy=Start-Process msiexec.exe -ArgumentList @('/i',"`"$legacyMsi`"",'/qn','/norestart','/l*v','installer-ui-legacy.log') -Wait -PassThru
+ if($installLegacy.ExitCode -notin @(0,3010)){throw 'Legacy MSI installation failed'}
+ $legacyExe=Get-Item (Join-Path ${env:ProgramFiles(x86)} "$app/$app.exe")
  $legacy=Start-Process $legacyExe.FullName -PassThru
  Start-Sleep -Seconds 8
  $legacy.Refresh()
- if($legacy.HasExited -or $legacy.MainWindowHandle -eq 0){throw 'Branded legacy GUI did not open'}
+ if($legacy.HasExited -or $legacy.MainWindowHandle -eq 0){throw 'Installed legacy GUI did not open'}
  Capture $legacy.MainWindowHandle 'installed-app-x86'
  $legacyTitle=$legacy.MainWindowTitle
- Get-CimInstance Win32_Process | Where-Object {$_.ExecutablePath -eq $legacyExe.FullName} | ForEach-Object {Stop-Process -Id $_.ProcessId -Force}
+ Get-CimInstance Win32_Process | Where-Object {$_.ExecutablePath -eq $legacyExe.FullName -and $_.CommandLine -notmatch '--service|--server|--cm'} | ForEach-Object {Stop-Process -Id $_.ProcessId -Force}
+ $removeLegacy=Start-Process msiexec.exe -ArgumentList @('/x',"`"$legacyMsi`"",'/qn','/norestart','/l*v','installer-ui-legacy-remove.log') -Wait -PassThru
+ if($removeLegacy.ExitCode -notin @(0,3010)){throw 'Legacy MSI removal failed'}
  $process=Start-Process $Installer -ArgumentList @('/install','/norestart','/log','installer-ui.log') -PassThru
  $deadline=(Get-Date).AddSeconds(45)
  do { $uiProcess=Get-Process | Where-Object {$_.MainWindowTitle -eq "Instalação — $($brand.product_name)"} | Select-Object -First 1; if($uiProcess){$process=$uiProcess;break};Start-Sleep -Milliseconds 500 } while((Get-Date)-lt $deadline)
@@ -76,7 +76,7 @@ try {
  Invoke-Control $finish
  $deadline=(Get-Date).AddSeconds(35)
  do {
-  $client=Get-Process -Name $app -ErrorAction SilentlyContinue | Where-Object {$_.MainWindowHandle -ne 0} | Select-Object -First 1
+  $client=Get-Process -Name $app -ErrorAction SilentlyContinue | Where-Object {$_.MainWindowHandle -ne 0 -and $_.MainWindowTitle -eq $brand.product_name} | Select-Object -First 1
   if($client){break};Start-Sleep -Milliseconds 500
  } while((Get-Date)-lt $deadline)
  if(-not $client){throw 'Finishing the installer did not open the application'}
@@ -99,6 +99,6 @@ try {
 } finally {
  Get-CimInstance Win32_Process | Where-Object {$_.ExecutablePath -eq $exe -and $_.CommandLine -notmatch '--service|--server|--cm'} | ForEach-Object {Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue}
  if($legacyExe){Get-CimInstance Win32_Process | Where-Object {$_.ExecutablePath -eq $legacyExe.FullName} | ForEach-Object {Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue}}
- if(Test-Path $legacyRoot){Remove-Item $legacyRoot -Recurse -Force}
+ if($legacyExe -and (Test-Path $legacyExe.FullName)){Start-Process msiexec.exe -ArgumentList @('/x',"`"$legacyMsi`"",'/qn','/norestart') -Wait}
  if(Test-Path $exe){Start-Process $Installer -ArgumentList @('/uninstall','/quiet','/norestart','/log','installer-ui-uninstall.log') -Wait}
 }
