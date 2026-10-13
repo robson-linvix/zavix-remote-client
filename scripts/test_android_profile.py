@@ -7,6 +7,15 @@ from validate_android import ROOT, validate
 
 
 class ManagedAndroidProfileTest(unittest.TestCase):
+    def test_administrative_enrollment_is_restricted_to_shell_or_system(self):
+        import xml.etree.ElementTree as ET
+        ns = '{http://schemas.android.com/apk/res/android}'
+        tree = ET.parse(ROOT/'flutter/android/app/src/main/AndroidManifest.xml')
+        receiver = next(r for r in tree.findall('./application/receiver')
+                        if r.get(ns+'name') == '.ZavixProvisionReceiver')
+        self.assertEqual(receiver.get(ns+'permission'), 'android.permission.DUMP')
+        self.assertEqual(receiver.find('intent-filter/action').get(ns+'name'), 'app.zavix.remote.MDM_PREPARE')
+
     def test_current_managed_profile(self):
         validate()
 

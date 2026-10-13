@@ -1,6 +1,15 @@
 name: ZAVIX Remote Android pilot
 on:
   workflow_dispatch:
+    inputs:
+      native_run_id:
+        description: Reuse signed native libraries from an identical Rust source tree
+        required: false
+        default: ''
+      bridge_run_id:
+        description: Reuse bridge from an identical Rust source tree
+        required: false
+        default: ''
   push:
     branches: [codex/android-t2mini-20261013]
     paths:
@@ -17,6 +26,7 @@ on:
       - 'flutter/lib/mobile/widgets/zavix_android_panel.dart'
 permissions:
   contents: read
+  actions: read
 concurrency:
   group: zavix-android-pilot-${{ github.ref }}
   cancel-in-progress: false
@@ -34,10 +44,12 @@ jobs:
       - run: python3 scripts/test_android_profile.py
   generate-bridge:
     needs: configuration
+    if: inputs.bridge_run_id == ''
     uses: ./.github/workflows/bridge.yml
   android:
     name: Android pilot ${{ matrix.abi }}
-    needs: generate-bridge
+    needs: [configuration, generate-bridge]
+    if: always() && needs.configuration.result == 'success' && (needs.generate-bridge.result == 'success' || inputs.bridge_run_id != '')
     runs-on: ubuntu-24.04
     timeout-minutes: 90
     strategy:
@@ -52,6 +64,7 @@ jobs:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
         with:
           submodules: recursive
+          fetch-depth: 0
       - name: Install build prerequisites
         run: |
           sudo apt-get update
@@ -77,15 +90,37 @@ jobs:
           vcpkgDirectory: /opt/artifacts/vcpkg
           vcpkgGitCommitId: ${{ env.VCPKG_COMMIT_ID }}
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+        if: inputs.bridge_run_id == ''
         with:
           name: bridge-artifact
           path: ./
+      - name: Verify reusable sources
+        if: inputs.bridge_run_id != '' || inputs.native_run_id != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ZAVIX_BRIDGE_RUN_ID: ${{ inputs.bridge_run_id }}
+          ZAVIX_NATIVE_RUN_ID: ${{ inputs.native_run_id }}
+        run: |
+          for source_run in "$ZAVIX_BRIDGE_RUN_ID" "$ZAVIX_NATIVE_RUN_ID"; do
+            if [[ -z "$source_run" ]]; then continue; fi
+            [[ "$source_run" =~ ^[0-9]+$ ]]
+            source_revision=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$source_run" --jq .head_sha)
+            git diff --exit-code "$source_revision" "$GITHUB_SHA" -- src libs Cargo.toml Cargo.lock build.rs .cargo branding/zavix-android.json
+          done
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+        if: inputs.bridge_run_id != ''
+        with:
+          name: bridge-artifact
+          path: ./
+          run-id: ${{ inputs.bridge_run_id }}
+          github-token: ${{ github.token }}
       - name: Validate managed Android UI before native compilation
         working-directory: flutter
         run: |
           flutter pub get
           flutter analyze --no-pub --no-fatal-infos --no-fatal-warnings lib/mobile/widgets/zavix_android_panel.dart lib/mobile/pages/server_page.dart
       - name: Build codec dependencies
+        if: inputs.native_run_id == ''
         env:
           ANDROID_NDK_HOME: ${{ steps.ndk.outputs.ndk-path }}
         run: bash flutter/build_android_deps.sh '${{ matrix.abi }}'
@@ -98,6 +133,7 @@ jobs:
           prefix-key: zavix-android-pilot
           key: ${{ matrix.target }}
       - name: Compile native Android client
+        if: inputs.native_run_id == ''
         env:
           ANDROID_NDK_HOME: ${{ steps.ndk.outputs.ndk-path }}
           ANDROID_NDK_ROOT: ${{ steps.ndk.outputs.ndk-path }}
@@ -108,6 +144,30 @@ jobs:
           mkdir -p 'flutter/android/app/src/main/jniLibs/${{ matrix.abi }}'
           cp 'target/${{ matrix.target }}/release/liblibrustdesk.so' 'flutter/android/app/src/main/jniLibs/${{ matrix.abi }}/librustdesk.so'
           cp "$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/${{ matrix.ndk_lib }}/libc++_shared.so" 'flutter/android/app/src/main/jniLibs/${{ matrix.abi }}/'
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+        if: inputs.native_run_id != ''
+        with:
+          name: ZAVIXRemote-Android-pilot-${{ matrix.abi }}
+          path: /tmp/zavix-native-reuse
+          run-id: ${{ inputs.native_run_id }}
+          github-token: ${{ github.token }}
+      - name: Load verified native libraries
+        if: inputs.native_run_id != ''
+        run: |
+          apk=$(find /tmp/zavix-native-reuse -name '*.apk' -print -quit)
+          "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --print-certs "$apk" > /tmp/reuse-signature.txt
+          python3 - <<'PY'
+          import re,zipfile
+          from pathlib import Path
+          found=re.search(r'Signer #1 certificate SHA-256 digest: ([a-f0-9]+)',Path('/tmp/reuse-signature.txt').read_text())
+          assert found and found.group(1)==Path('branding/android-test-certificate.sha256').read_text().strip()
+          apk=next(Path('/tmp/zavix-native-reuse').rglob('*.apk'))
+          with zipfile.ZipFile(apk) as z:
+              for name in ('librustdesk.so','libc++_shared.so'):
+                  dest=Path('flutter/android/app/src/main/jniLibs/armeabi-v7a')/name
+                  dest.parent.mkdir(parents=True,exist_ok=True)
+                  dest.write_bytes(z.read('lib/armeabi-v7a/'+name))
+          PY
       - name: Load protected stable Android test signer
         env:
           ZAVIX_ANDROID_TEST_KEYSTORE: ${{ secrets.ZAVIX_ANDROID_TEST_KEYSTORE }}
@@ -125,7 +185,7 @@ jobs:
           JAVA_HOME: /usr/lib/jvm/java-17-openjdk-amd64
           ZAVIX_ANDROID_TEST_STORE_PASSWORD: ${{ secrets.ZAVIX_ANDROID_TEST_STORE_PASSWORD }}
           GRADLE_OPTS: '-Dorg.gradle.jvmargs=-Xmx4g -Dorg.gradle.workers.max=2'
-        run: flutter build apk --release --flavor pilot --target-platform '${{ matrix.flutter_target }}' --split-per-abi --build-name 1.1.0 --build-number 3
+        run: flutter build apk --release --flavor pilot --target-platform '${{ matrix.flutter_target }}' --split-per-abi --build-name 1.1.1 --build-number 4
       - name: Verify APK identity and signature
         run: |
           ANDROID_BUILD_TOOLS="$ANDROID_HOME/build-tools/36.0.0"
@@ -140,10 +200,10 @@ jobs:
           found=re.search(r'Signer #1 certificate SHA-256 digest: ([a-f0-9]+)',text)
           assert found and found.group(1)==Path('branding/android-test-certificate.sha256').read_text().strip()
           identity=Path('android-apk-identity.txt').read_text()
-          assert "versionName='1.1.0-piloto'" in identity and "sdkVersion:'24'" in identity
+          assert "versionName='1.1.1-piloto'" in identity and "sdkVersion:'24'" in identity
           PYVERIFY
           mkdir -p AndroidPilot
-          cp "$APK" 'AndroidPilot/ZAVIXRemote-1.1.0-piloto-${{ matrix.abi }}.apk'
+          cp "$APK" 'AndroidPilot/ZAVIXRemote-1.1.1-piloto-${{ matrix.abi }}.apk'
           cp android-apk-identity.txt android-signature.txt AndroidPilot/
           sha256sum AndroidPilot/*.apk > AndroidPilot/SHA256SUMS.txt
           git rev-parse HEAD > AndroidPilot/SOURCE_REVISION.txt

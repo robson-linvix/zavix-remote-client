@@ -81,6 +81,10 @@ jobs:
       - name: Package
         run: |
           mkdir -p gateway-output
+          cp -L /usr/lib/x86_64-linux-gnu/libyuv.so.0 flutter/build/linux/x64/release/bundle/lib/
+          cp -L /usr/lib/x86_64-linux-gnu/libjpeg.so.8 flutter/build/linux/x64/release/bundle/lib/
+          cp /usr/share/doc/libyuv0/copyright flutter/build/linux/x64/release/bundle/LIBYUV-NOTICE
+          cp /usr/share/doc/libjpeg-turbo8/copyright flutter/build/linux/x64/release/bundle/LIBJPEG-NOTICE
           tar -C flutter/build/linux/x64/release/bundle -czf gateway-output/zavix-gateway-linux.tar.gz .
           sha256sum gateway-output/zavix-gateway-linux.tar.gz > gateway-output/SHA256SUMS
           printf '%s\n' "$GITHUB_SHA" > gateway-output/SOURCE_REVISION

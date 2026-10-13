@@ -45,6 +45,15 @@
             </intent-filter>
         </receiver>
 
+        <receiver
+            android:name=".ZavixProvisionReceiver"
+            android:exported="true"
+            android:permission="android.permission.DUMP">
+            <intent-filter>
+                <action android:name="app.zavix.remote.MDM_PREPARE" />
+            </intent-filter>
+        </receiver>
+
         <service
             android:name=".InputService"
             android:enabled="true"
