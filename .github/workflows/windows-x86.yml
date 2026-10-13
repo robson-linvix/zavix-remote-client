@@ -80,6 +80,8 @@ jobs:
         python scripts/fetch_sciter_x86.py
     - name: Verify x86 runtime configuration and rename protection
       run: ./scripts/test_windows.ps1 -Bundle ./dist -Architecture x86
+    - name: Verify legacy GUI can start under WOW64
+      run: ./scripts/test_sciter_startup.ps1 -Bundle ./dist
     - name: Collect original dependency notices
       run: python scripts/collect_licenses.py --arch x86
     - name: Install pinned WiX tools
@@ -123,6 +125,8 @@ jobs:
           windows-msi-evidence.json
           runtime-installed*.json
           runtime-installed-error.txt
+          sciter-startup*.txt
+          sciter-startup-evidence.json
           SignOutput/*.wxs
         if-no-files-found: ignore
         retention-days: 14

@@ -35,3 +35,6 @@ manifest = {'product':brand['product_name'],'version':brand['version'],'upstream
 print(json.dumps(manifest, indent=2))
 
 (out / 'windows-msi-evidence.json').write_bytes((root / 'windows-msi-evidence.json').read_bytes())
+
+if args.arch == 'x86':
+    (out / 'sciter-startup-evidence.json').write_bytes((root / 'sciter-startup-evidence.json').read_bytes())

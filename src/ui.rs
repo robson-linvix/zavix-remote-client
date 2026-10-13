@@ -865,6 +865,14 @@ pub fn value_crash_workaround(values: &[Value]) -> Arc<Vec<Value>> {
 }
 
 pub fn get_icon() -> String {
+    #[cfg(windows)]
+    if crate::get_app_name() == "ZAVIXRemote" {
+        let icon = hbb_common::sodiumoxide::base64::encode(
+            include_bytes!("../branding/zavix-icon.png"),
+            hbb_common::sodiumoxide::base64::Variant::Original,
+        );
+        return format!("data:image/png;base64,{icon}");
+    }
     // 128x128
     #[cfg(target_os = "macos")]
     // 128x128 on 160x160 canvas, then shrink to 128, mac looks better with padding
