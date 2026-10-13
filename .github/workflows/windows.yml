@@ -1,7 +1,13 @@
 # ZAVIX Windows V1: one MSI installer and corresponding sources.
 name: ZAVIX Remote Windows
 'on':
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      brand:
+        description: Windows edition
+        type: choice
+        options: [zavix, linvix]
+        default: zavix
 permissions:
   contents: read
 env:
@@ -47,6 +53,11 @@ jobs:
       uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
       with:
         submodules: recursive
+    - name: Select trusted Windows brand
+      run: |
+        python scripts/prepare_brand.py "${{ inputs.brand || 'zavix' }}"
+        $brand = Get-Content branding/zavix.json | ConvertFrom-Json
+        "CLIENT_APP=$($brand.app_name)" | Out-File -Append -Encoding utf8 $env:GITHUB_ENV
     - name: Restore bridge files
       uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
       with:
@@ -161,27 +172,27 @@ jobs:
         python scripts/build_msi.py --wix .tools/wix/wix.exe
         if ($LASTEXITCODE -ne 0) { throw 'MSI packaging failed' }
     - name: Verify MSI lifecycle on Windows
-      run: ./scripts/test_msi.ps1 -Installer ./SignOutput/ZAVIXRemote-1.5.0.3.msi
+      run: ./scripts/test_msi.ps1 -Installer ./SignOutput/${{ env.CLIENT_APP }}-1.5.0.3.msi
     - name: Verify installer and source manifest
       run: python scripts/package_release.py
     - name: Upload ZAVIX Windows artifacts
       uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
       with:
-        name: zavix-windows-x64-unsigned
+        name: ${{ inputs.brand || 'zavix' }}-windows-x64-unsigned
         path: SignOutput/
         if-no-files-found: error
         retention-days: 14
     - name: Upload installable bundle for diagnosis
       uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
       with:
-        name: zavix-windows-x64-bundle
+        name: ${{ inputs.brand || 'zavix' }}-windows-x64-bundle
         path: dist/
         retention-days: 7
     - name: Upload installer diagnostics
       if: always()
       uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
       with:
-        name: zavix-msi-validation
+        name: ${{ inputs.brand || 'zavix' }}-msi-validation
         path: |
           msi-*.log
           windows-msi-evidence.json

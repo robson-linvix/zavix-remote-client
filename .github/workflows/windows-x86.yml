@@ -1,6 +1,12 @@
 name: ZAVIX Remote Windows x86 legado
 'on':
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      brand:
+        description: Windows edition
+        type: choice
+        options: [zavix, linvix]
+        default: zavix
 permissions:
   contents: read
 env:
@@ -20,6 +26,11 @@ jobs:
       uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
       with:
         submodules: recursive
+    - name: Select trusted Windows brand
+      run: |
+        python scripts/prepare_brand.py "${{ inputs.brand || 'zavix' }}"
+        $brand = Get-Content branding/zavix.json | ConvertFrom-Json
+        "CLIENT_APP=$($brand.app_name)" | Out-File -Append -Encoding utf8 $env:GITHUB_ENV
     - name: Install x86 LLVM and Clang
       uses: rustdesk-org/install-llvm-action-32bit@6aa7d9ad3df84dff01cd4596dd0fc880a7f47fce
       with:
@@ -76,7 +87,7 @@ jobs:
         cargo update -p sciter-rs --precise 674e07d3066ca9a92ced3816203ab6b652629d1e
         cargo build --locked --features inline,vram,hwcodec --release --bin rustdesk
         mkdir -p dist
-        cp target/release/rustdesk.exe dist/ZAVIXRemote.exe
+        cp target/release/rustdesk.exe dist/${CLIENT_APP}.exe
         python scripts/fetch_sciter_x86.py
     - name: Verify x86 runtime configuration and rename protection
       run: ./scripts/test_windows.ps1 -Bundle ./dist -Architecture x86
@@ -96,14 +107,14 @@ jobs:
         if ($LASTEXITCODE -ne 0) { throw 'x86 MSI packaging failed' }
     - name: Verify x86 MSI lifecycle under WOW64
       run: |
-        & "$env:WINDIR/SysWOW64/WindowsPowerShell/v1.0/powershell.exe" -NoProfile -ExecutionPolicy RemoteSigned -File ./scripts/test_msi.ps1 -Installer ./SignOutput/ZAVIXRemote-1.5.0.3-x86.msi -Architecture x86
+        & "$env:WINDIR/SysWOW64/WindowsPowerShell/v1.0/powershell.exe" -NoProfile -ExecutionPolicy RemoteSigned -File ./scripts/test_msi.ps1 -Installer ./SignOutput/${{ env.CLIENT_APP }}-1.5.0.3-x86.msi -Architecture x86
         if ($LASTEXITCODE -ne 0) { throw 'x86 lifecycle validation failed' }
     - name: Archive actual x86 build inputs and checked installer
       run: python scripts/package_release.py --arch x86
     - name: Upload x86 release components
       uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
       with:
-        name: zavix-windows-x86-unsigned
+        name: ${{ inputs.brand || 'zavix' }}-windows-x86-unsigned
         path: SignOutput/
         if-no-files-found: error
         retention-days: 14
@@ -111,7 +122,7 @@ jobs:
       if: always()
       uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
       with:
-        name: zavix-windows-x86-bundle
+        name: ${{ inputs.brand || 'zavix' }}-windows-x86-bundle
         path: dist/
         if-no-files-found: ignore
         retention-days: 7
@@ -119,7 +130,7 @@ jobs:
       if: always()
       uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
       with:
-        name: zavix-x86-msi-validation
+        name: ${{ inputs.brand || 'zavix' }}-x86-msi-validation
         path: |
           msi-*.log
           windows-msi-evidence.json

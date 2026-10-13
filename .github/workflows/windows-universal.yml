@@ -2,6 +2,11 @@ name: Assemble ZAVIX universal Windows installer
 'on':
   workflow_dispatch:
     inputs:
+      brand:
+        description: Windows edition
+        type: choice
+        options: [zavix, linvix]
+        default: zavix
       x86_run:
         description: Successful x86 MSI build run ID
         required: true
@@ -24,17 +29,22 @@ jobs:
       uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
       with:
         submodules: recursive
+    - name: Select trusted Windows brand
+      run: |
+        python scripts/prepare_brand.py "${{ inputs.brand || 'zavix' }}"
+        $brand = Get-Content branding/zavix.json | ConvertFrom-Json
+        "CLIENT_APP=$($brand.app_name)" | Out-File -Append -Encoding utf8 $env:GITHUB_ENV
     - name: Download checked x86 MSI and corresponding sources
       uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
       with:
-        name: zavix-windows-x86-unsigned
+        name: ${{ inputs.brand || 'zavix' }}-windows-x86-unsigned
         path: inputs/x86
         run-id: ${{ inputs.x86_run }}
         github-token: ${{ github.token }}
     - name: Download checked x64 MSI and corresponding sources
       uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
       with:
-        name: zavix-windows-x64-unsigned
+        name: ${{ inputs.brand || 'zavix' }}-windows-x64-unsigned
         path: inputs/x64
         run-id: ${{ inputs.x64_run }}
         github-token: ${{ github.token }}
@@ -62,11 +72,11 @@ jobs:
     - name: Execute final EXE and validate architecture selection and lifecycle
       run: |
         $version = (Get-Content branding/zavix.json | ConvertFrom-Json).version
-        ./scripts/test_bundle.ps1 -Installer "UniversalOutput/ZAVIXRemote-$version.exe"
+        ./scripts/test_bundle.ps1 -Installer "UniversalOutput/${env:CLIENT_APP}-$version.exe"
     - name: Upload universal distribution
       uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
       with:
-        name: zavix-windows-universal-unsigned
+        name: ${{ inputs.brand || 'zavix' }}-windows-universal-unsigned
         path: UniversalOutput/
         if-no-files-found: error
         retention-days: 14
@@ -74,7 +84,7 @@ jobs:
       if: always()
       uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
       with:
-        name: zavix-universal-validation
+        name: ${{ inputs.brand || 'zavix' }}-universal-validation
         path: |
           bundle-*.log
           bundle-runtime.json
