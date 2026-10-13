@@ -289,6 +289,25 @@ class _DesktopHomePageState extends State<DesktopHomePage>
   }
 
   buildPasswordBoard2(BuildContext context, ServerModel model) {
+    if (isWindows && bind.mainGetAppNameSync() == 'ZAVIXRemote' &&
+        model.approveMode == 'click') {
+      return Container(
+        margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 13),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: MyTheme.accent.withOpacity(0.08),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: const Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Modo assistido', style: TextStyle(fontWeight: FontWeight.w600)),
+            SizedBox(height: 5),
+            Text('Informe seu ID ao atendente e aceite a solicitação neste computador.'),
+          ],
+        ),
+      );
+    }
     RxBool refreshHover = false.obs;
     RxBool editHover = false.obs;
     final textColor = Theme.of(context).textTheme.titleLarge?.color;
@@ -461,7 +480,10 @@ class _DesktopHomePageState extends State<DesktopHomePage>
     if (isWindows && !bind.isDisableInstallation()) {
       if (!bind.mainIsInstalled()) {
         return buildInstallCard(
-            "", bind.isOutgoingOnly() ? "" : "install_tip", "Install",
+            bind.mainGetAppNameSync() == 'ZAVIXRemote' ? 'Modo portátil' : "",
+            bind.isOutgoingOnly() ? "" : bind.mainGetAppNameSync() == 'ZAVIXRemote'
+                ? 'Este aplicativo está aberto sem instalação. Instale para executar o serviço do ZAVIX Remote. O Windows poderá solicitar autorização de administrador.'
+                : "install_tip", "Install",
             () async {
           await rustDeskWinManager.closeAllSubWindows();
           bind.mainGotoInstall();
@@ -608,8 +630,12 @@ class _DesktopHomePageState extends State<DesktopHomePage>
                 begin: Alignment.centerLeft,
                 end: Alignment.centerRight,
                 colors: [
-                  Color.fromARGB(255, 226, 66, 188),
-                  Color.fromARGB(255, 244, 114, 124),
+                  if (bind.mainGetAppNameSync() == 'ZAVIXRemote' && title == 'Modo portátil') ...[
+                    const Color(0xFF2563EB), const Color(0xFF387BEF),
+                  ] else ...[
+                    Color.fromARGB(255, 226, 66, 188),
+                    Color.fromARGB(255, 244, 114, 124),
+                  ],
                 ],
               )),
               padding: EdgeInsets.all(20),

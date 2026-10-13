@@ -6,7 +6,7 @@ root = Path(__file__).resolve().parents[1]
 dist = root / 'dist'
 legal = dist / 'legal'
 legal.mkdir(exist_ok=True)
-for name in ['LICENCE','NOTICE-ZAVIX.md','THIRD-PARTY-LICENSES.md']:
+for name in ['LICENCE','NOTICE-ZAVIX.md','THIRD-PARTY-LICENSES.md','PRIVACY.md','CODE_SIGNING_POLICY.md']:
     shutil.copyfile(root / name, dist / name)
 shutil.copyfile(root / 'branding/WindowInjection-LICENSE.txt', legal / 'WindowInjection-LICENSE.txt')
 metadata = json.loads(subprocess.check_output(['cargo','metadata','--locked','--format-version','1'],cwd=root))
