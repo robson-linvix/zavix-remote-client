@@ -39,7 +39,9 @@ def build(native,out,edition):
             if len(run('lipo','-archs',binary).split())==1:shutil.copyfile(binary,dest)
             else:run('lipo','-thin',arch,binary,'-output',dest)
             thin.append(dest)
+        original_mode=p.stat().st_mode
         run('lipo','-create',*thin,'-output',p)
+        p.chmod(original_mode)
         assert set(run('lipo','-archs',p).split())=={'arm64','x86_64'}
         merged.append(str(relative))
     assert len(merged)>=3 and f'Contents/MacOS/{app_name}' in merged and 'Contents/MacOS/service' in merged

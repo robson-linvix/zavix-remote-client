@@ -3,7 +3,10 @@ from pathlib import Path
 import argparse,json,os,plistlib,subprocess,time
 
 def command(*args,check=True):
-    return subprocess.run(list(map(str,args)),text=True,capture_output=True,timeout=120,check=check)
+    result=subprocess.run(list(map(str,args)),text=True,capture_output=True,timeout=120)
+    if check and result.returncode:
+        raise RuntimeError(str(args[0])+': '+(result.stdout+result.stderr)[-4000:])
+    return result
 
 p=argparse.ArgumentParser();p.add_argument('--release',type=Path,required=True);p.add_argument('--arch',choices=['x86_64','arm64'],required=True)
 a=p.parse_args();manifest=json.loads((a.release/'manifest.json').read_text());app_name=manifest['app_name']
@@ -22,6 +25,7 @@ try:
     command('codesign','--verify','--deep','--strict',app)
     signed_identity=command('codesign','-d','--verbose=2',app).stderr
     assert 'Identifier='+manifest['bundle_id'] in signed_identity
+    assert os.access(exe,os.X_OK) and os.access(app/'Contents/MacOS/service',os.X_OK)
     runtime=command(exe,'--zavix-diagnostics')
     data=json.loads(next(line for line in reversed(runtime.stdout.splitlines()) if line.startswith('{')))
     assert data['app_name']==app_name and data['product_name']==manifest['product'] and data['version']==manifest['version'] and data['installed']
