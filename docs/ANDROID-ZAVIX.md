@@ -34,6 +34,25 @@ Publicado para teste em 13/10/2026: [APK ARMv7](https://remote.zavix.app/downloa
 
 Android: perfil, initializer Rust específico, manifesto/Gradle/boot, hooks mínimos Kotlin de estado/diagnóstico e widget próprio Flutter. `src/flutter_ffi.rs` recebe somente os hooks dentro do módulo JNI Android. Mobile server page adiciona painel e tratamento de captura indisponível; settings oculta o boot genérico em favor da configuração gerenciada. Workflow, signer e validação são exclusivos do Android. Submodule permanece no commit original. Nenhuma pipeline, versão, credencial, serviço ou protocolo Windows foi alterado. Backend de diagnóstico e distribuição é um serviço separado na VPS, com reload gracioso do Nginx e sem reiniciar portal/gateways.
 
+Arquivos existentes afetados, em relação à main Windows anterior:
+
+| Arquivo | Caminho alterado e necessidade |
+| --- | --- |
+| `src/lib.rs` | Inclui o módulo de perfil somente no Android. |
+| `src/flutter_ffi.rs` | Aplica o perfil na inicialização Android/boot e disponibiliza fechamento JNI quando a captura falha; caminho dos demais sistemas preservado. |
+| `flutter/android/app/build.gradle` | Identidade, variantes, ícone, SDK mínimo e assinatura de teste estável para distribuir o APK; campo gerenciado disponibilizado ao Kotlin. |
+| `flutter/android/app/src/main/AndroidManifest.xml` | Identidade/ícone, link próprio e receiver privado para o boot configurado. |
+| `MainActivity.kt` | Aviso de controle, instalação do diagnóstico e canal de consulta/envio/boot para o painel. |
+| `MainService.kt` | Registra transições de captura e encerra conexão autorizada sem captura disponível; evita espera indefinida. |
+| `PermissionRequestTransparentActivity.kt` | Aviso inicial, registro do resultado e propagação do boot; mantém solicitação normal de permissão do Android. |
+| `BootReceiver.kt` | Retorno opt-in gerenciado com projeção nova; conserva o fluxo anterior quando o modo está desativado. |
+| `flutter/android/app/src/main/kotlin/ffi.kt` | Declara o fechamento JNI, inclusive sem interface Flutter aberta. |
+| `flutter/android/app/src/main/res/values/strings.xml` | Identidade e descrição das permissões em português, coerentes com o novo modo. |
+| `flutter/lib/mobile/pages/server_page.dart` | Adiciona painel gerenciado e mensagem de captura indisponível; tela anterior mantida quando a opção não está ativa. |
+| `flutter/lib/mobile/pages/settings_page.dart` | Oculta o boot genérico somente no perfil ZAVIX, para usar a habilitação após senha/permissões. |
+
+Os arquivos Kotlin sem caminho completo acima ficam em `flutter/android/app/src/main/kotlin/com/carriez/flutter_hbb/`. As demais mudanças são novos módulos, perfil, scripts, workflow, certificado público e documentação. A minimização não encontrou mudanças de limpeza ou refatoração fora desses caminhos.
+
 ## Histórico do piloto 1.0.0 (assistido)
 
 ## Estado em 12/10/2026
