@@ -14,6 +14,13 @@ Diagnóstico limitado aos últimos 200 eventos do próprio app, no armazenamento
 
 Assinatura de teste estável PKCS12, com chave privada criptografada fora do Git, disponível somente nos secrets de Actions. A identidade pública do certificado fica em `branding/android-test-certificate.sha256`. Não usar esse candidato como homologação da frota nem publicação Play. Windows 1.5.0.6 permanece preservado.
 
+Publicado para teste em 13/10/2026: [APK ARMv7](https://remote.zavix.app/download/android/apk) e [fontes correspondentes](https://remote.zavix.app/download/android/source). [Execução 38403475281](https://github.com/robson-linvix/zavix-remote-client/actions/runs/38403475281) concluída com sucesso, source `45cff5c89c1cc13a68084dd7dba1121adc47079a`. Perfil (3 testes), análise Flutter, núcleo Rust e APK Kotlin/Flutter passaram. Identidade verificada: package `app.zavix.remote.pilot.t2mini`, versionName `1.1.0-piloto`, versionCode `1003`, min SDK 24, target SDK 36, ARMv7 e assinatura APK v2 RSA 3072. Downloads públicos tiveram tamanho e SHA-256 conferidos. O funcionamento no SUNMI e o retorno após reinício permanecem pendentes de homologação no equipamento.
+
+| Artefato | Bytes | SHA-256 |
+| --- | ---: | --- |
+| APK | 60.432.117 | `7976ae41c897b3aa63c7e912bd0a6cae7dfcabc24483665e2c65d00b101cda83` |
+| Fontes | 7.815.019 | `8a7d6776197908e66b5aa001152dd9fa71cdf9c0fa588be8522c41c52647152f` |
+
 ### Ordem do teste
 
 1. Parar o serviço do APK anterior ou usar **Forçar parada** nas configurações do Android; fechar a janela pode manter o serviço ativo. Instalar e abrir **ZAVIX Remote T2 Mini (teste)** para evitar disputa de captura.
