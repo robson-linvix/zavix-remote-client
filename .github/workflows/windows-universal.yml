@@ -93,7 +93,7 @@ jobs:
         path: |
           installer-ui*.log
           UniversalOutput/installer-*.png
-          UniversalOutput/installed-app.png
+          UniversalOutput/installed-app*.png
           UniversalOutput/installer-ui-evidence.json
           bundle-*.log
           bundle-runtime.json
