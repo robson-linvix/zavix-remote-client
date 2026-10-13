@@ -33,10 +33,24 @@ try {
     if (-not (Test-Path (Join-Path (Split-Path $exe) 'PRIVACY.md'))) { throw 'Bundle repair did not restore payload' }
     Run-Bundle '/uninstall'
     if ((Test-Path $exe) -or (Test-Path $state) -or (Get-Service ZAVIXRemote -ErrorAction SilentlyContinue)) { throw 'Bundle uninstall left executable, state or service' }
+    # Exercise upgrade from the exact MSI currently distributed, not only a version-number fixture.
+    $releaseApi = if ($brand.app_name -eq 'LinvixRemote') { '/api/linvix-client-release' } else { '/api/client-release' }
+    $previous = Invoke-RestMethod ('https://remote.zavix.app' + $releaseApi)
+    if (-not $previous.ready -or $previous.product -ne $brand.product_name -or $previous.version -eq $brand.version) { throw 'Previous public MSI is not a valid upgrade baseline' }
+    $priorMsi = $previous.downloads.msi64
+    Invoke-WebRequest ('https://remote.zavix.app' + $priorMsi.url) -OutFile previous-public.msi
+    if ((Get-FileHash previous-public.msi -Algorithm SHA256).Hash.ToLower() -ne $priorMsi.sha256) { throw 'Previous public MSI hash differs' }
+    $old = Start-Process msiexec.exe -ArgumentList @('/i', '"previous-public.msi"', '/qn', '/norestart', '/l*v', 'bundle-previous-public.log') -PassThru -Wait
+    if ($old.ExitCode -notin @(0,3010)) { throw 'Previous public MSI installation failed' }
+    Run-Bundle '/install'
+    $p = Start-Process $exe -ArgumentList '--zavix-diagnostics' -Wait -PassThru -RedirectStandardOutput bundle-upgrade-runtime.json
+    $upgraded = Get-Content bundle-upgrade-runtime.json | ConvertFrom-Json
+    if ($p.ExitCode -ne 0 -or $upgraded.version -ne $brand.version -or -not $upgraded.installed) { throw 'Upgrade retained an old native executable or DLL' }
+    Run-Bundle '/uninstall'
     $signature = (Get-AuthenticodeSignature $Installer).Status.ToString()
     if ($signature -ne 'NotSigned') { throw 'Unexpected final installer signature' }
-    @{result='passed';signature=$signature;sha256=(Get-FileHash $Installer -Algorithm SHA256).Hash.ToLower();runtime=$runtime;
-      cases=@('x86 MSI installation under WOW64','automatic x64 selection and replacement of x86 MSI','service startup','repair','uninstall');
+    @{result='passed';previous_public_version=$previous.version;signature=$signature;sha256=(Get-FileHash $Installer -Algorithm SHA256).Hash.ToLower();runtime=$runtime;
+      cases=@('x86 MSI installation under WOW64','automatic x64 selection and replacement of x86 MSI','service startup','repair','uninstall','upgrade from actual published MSI');
       old_windows='not tested on Windows 7/8';x86_os='not tested on actual 32-bit OS'} | ConvertTo-Json -Depth 6 | Set-Content UniversalOutput/bundle-runtime-evidence.json
 } finally {
     foreach ($key in @($state,$state32)) {
