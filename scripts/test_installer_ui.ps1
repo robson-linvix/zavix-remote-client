@@ -48,6 +48,8 @@ try {
  Capture $process.MainWindowHandle 'installer-welcome'
  Invoke-Control (Wait-Control $window 'Instalar')
  $finish=Wait-Control $window 'Concluir e abrir'
+ $serviceBefore=Get-CimInstance Win32_Service -Filter "Name='$app'"
+ if($serviceBefore.State -ne 'Running' -or $serviceBefore.StartMode -ne 'Auto'){throw 'Service must start before Finish opens the app'}
  Capture $process.MainWindowHandle 'installer-complete'
  Invoke-Control $finish
  $deadline=(Get-Date).AddSeconds(35)
@@ -56,14 +58,17 @@ try {
   if($client){break};Start-Sleep -Milliseconds 500
  } while((Get-Date)-lt $deadline)
  if(-not $client){throw 'Finishing the installer did not open the application'}
+ $clientProcess=Get-CimInstance Win32_Process -Filter "ProcessId=$($client.Id)"
+ $owner=Invoke-CimMethod -InputObject $clientProcess -MethodName GetOwner
+ if($owner.User -ne $env:USERNAME){throw 'Finish must open the app as the interactive installer user'}
  Start-Sleep -Seconds 3
  Capture $client.MainWindowHandle 'installed-app'
  $service=Get-CimInstance Win32_Service -Filter "Name='$app'"
  if($service.State -ne 'Running' -or $service.StartMode -ne 'Auto'){throw 'Automatic service is not running after interactive installation'}
  @{result='passed';product=$brand.product_name;version=$brand.version;application_window=$client.MainWindowTitle;
- finish_opens_application=$true;service=$service.State;service_start=$service.StartMode;environment='Windows Server 2022 x64 CI; interactive installer UI';
+ finish_opens_application=$true;launch_user=$owner.User;service_before_finish=$serviceBefore.State;service=$service.State;service_start=$service.StartMode;environment='Windows Server 2022 x64 CI; interactive installer UI';
  screenshots=@('installer-welcome.png','installer-complete.png','installed-app.png')} | ConvertTo-Json | Set-Content UniversalOutput/installer-ui-evidence.json
 } finally {
- Get-Process -Name $app -ErrorAction SilentlyContinue | Where-Object {$_.MainWindowHandle -ne 0} | Stop-Process -Force -ErrorAction SilentlyContinue
+ Get-CimInstance Win32_Process | Where-Object {$_.ExecutablePath -eq $exe -and $_.CommandLine -notmatch '--service|--server|--cm'} | ForEach-Object {Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue}
  if(Test-Path $exe){Start-Process $Installer -ArgumentList @('/uninstall','/quiet','/norestart','/log','installer-ui-uninstall.log') -Wait}
 }
