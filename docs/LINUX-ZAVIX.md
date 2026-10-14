@@ -32,19 +32,26 @@ O manifesto nasce com `channel: candidate`. Build e abertura gráfica não compr
 
 ## Linux 32 bits
 
-O pedido de 32 bits permanece pendente. Flutter não oferece alvo desktop Linux x86/i686. O Sciter legado usado pelo cliente Windows x86 não fornece o runtime Linux x86 correspondente. O SDK inclui ARM32, que é outra arquitetura e não funciona em computadores x86 de 32 bits.
+O perfil `zavix-linux-gtk` adiciona uma interface GTK3 nativa para x86/i686, compilada pelo workflow `linux32-client.yml`. O alvo inicial é Debian 12 i386 com X11 e glibc 2.36. Distribuição e CPU dos equipamentos do usuário ainda precisam ser confirmadas. O pacote de 64 bits continua separado, com interface Flutter e alvo Ubuntu 22.04.
 
-- Plataformas oficiais Flutter: https://docs.flutter.dev/reference/supported-platforms
-- Runtimes oficiais Sciter: https://github.com/c-smile/sciter-sdk/tree/master/bin.lnx
-- Discussão específica do runtime x86 ausente: https://github.com/c-smile/sciter-sdk/issues/222
+O cliente GTK mostra ID e estado de conexão, permite aceitar, recusar e encerrar um atendimento e fecha a sessão ao sair. Só admite um atendimento assistido por vez; não oferece acesso não supervisionado, transferência de arquivos, área de transferência, terminal, áudio ou câmera. Reutiliza o protocolo e o gerenciador de conexões existentes. A feature `flutter` seleciona o backend Rust moderno, mas o executável GTK não carrega Flutter nem Sciter.
 
-É necessário confirmar distribuição, versão e arquitetura dos equipamentos. Um sistema operacional de 32 bits pode estar instalado em uma CPU capaz de executar 64 bits; isso não permite executar este pacote enquanto o sistema continuar em 32 bits. Suporte nativo i686 exige outra interface/engine e homologação própria, sem renomear um pacote x64 como x86.
+O pipeline gera `.deb`, `.tar.gz`, fontes correspondentes e SHA256 com sufixo `linux-x86`. O teste executa o ELF de 32 bits, confere a configuração, instala, abre GTK em X11, exercita os botões com o IPC real do gerenciador e remove o pacote. Isso não substitui a homologação de imagem, teclado e mouse em um computador de 32 bits com sessão gráfica real.
+
+```sh
+sudo apt install ./ZAVIXRemote-1.5.0.6-linux-x86.deb
+zavixremote
+```
+
+O mesmo nome de pacote `zavixremote` é usado nas duas arquiteturas; instale a variante compatível com o sistema. O pacote portátil também depende das bibliotecas listadas no `.deb`.
 
 ## Superfície de regressão
 
 As alterações em `Cargo.toml`, `src/lib.rs`, `src/common.rs` e `src/core_main.rs` apenas registram e acionam o perfil sob `target_os=linux` e feature `zavix-linux`. Com a feature desligada, o Linux anterior e o gateway mantêm o caminho existente. Windows, macOS, Android, protocolos e submódulos não são alterados.
 
 O preparo da marca transforma somente arquivos de interface no checkout isolado do build Linux. A lógica nova fica em `src/zavix_linux.rs` e nos scripts Linux. Os workflows existentes permanecem intactos.
+
+Para GTK/i686, `Cargo.toml` registra a feature e o binário, `src/lib.rs` expõe o módulo condicionado à feature e `src/zavix_linux.rs` desabilita capacidades que a interface reduzida não oferece. Esses são os únicos caminhos existentes modificados nesta etapa. A interface nova fica em `src/zavix_linux_gtk.rs`; os caminhos de Windows, macOS, Android e Linux64 permanecem iguais com `zavix-linux-gtk` desligada.
 
 ## Validação em ambiente limpo (14/10/2026)
 
@@ -54,4 +61,4 @@ Com essas correções, o cliente abriu e ficou online em um contêiner Ubuntu 22
 
 ## Disponibilização autorizada no portal
 
-Em 14/10/2026, após receber o resultado da homologação parcial, o usuário solicitou disponibilizar esta build na central oficial. O pacote foi publicado em https://remote.zavix.app/download#linux-edition com identificação explícita de versão candidata para testes, Ubuntu 22.04/x86_64/X11 e limitações. O manifesto continua candidate, Linux 32 bits continua indisponível e não houve promoção para estável. Código-fonte e SHA256 acompanham o instalador. Publicação do portal: commit 377a987.
+Em 14/10/2026, após receber o resultado da homologação parcial, o usuário solicitou disponibilizar esta build na central oficial. O pacote de 64 bits foi publicado em https://remote.zavix.app/download#linux-edition com identificação explícita de versão candidata para testes, Ubuntu 22.04/x86_64/X11 e limitações. O manifesto continua candidate e não houve promoção para estável. Código-fonte e SHA256 acompanham o instalador. Publicação do portal: commit 377a987. A variante de 32 bits só deve ganhar link após aprovação dos testes e conferência dos artefatos.
