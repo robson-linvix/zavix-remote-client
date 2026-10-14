@@ -21,6 +21,7 @@ name = "service"
 path = "src/service.rs"
 
 [features]
+zavix-linux = []
 zavix-macos = []
 inline = []
 use_samplerate = ["samplerate", "libsamplerate-sys"]

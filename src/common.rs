@@ -2361,6 +2361,14 @@ pub fn rustdesk_interval(i: Interval) -> ThrottledInterval {
 }
 
 pub fn load_custom_client() {
+    #[cfg(all(target_os = "linux", feature = "zavix-linux"))]
+    {
+        if let Err(err) = crate::zavix_linux::initialize() {
+            eprintln!("Linux configuration error: {}", err);
+            std::process::exit(1);
+        }
+        return;
+    }
     #[cfg(all(target_os = "macos", feature = "zavix-macos"))]
     {
         if let Err(err) = crate::zavix_macos::initialize() {
