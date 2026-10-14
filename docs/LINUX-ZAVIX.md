@@ -47,6 +47,8 @@ O mesmo nome de pacote `zavixremote` é usado nas duas arquiteturas; instale a v
 
 O alvo Rust i686 requer SSE2; não declarar compatibilidade com todos os processadores antigos de 32 bits. Referência: https://github.com/rust-lang/portable-simd/blob/master/beginners-guide.md. O runner executa código de 32 bits sobre kernel de 64 bits, não em CPU física antiga.
 
+Em 14/10/2026, o CI da revisão `2dc3407d03956490e9ccef74d46ee55b4996f64a` passou: https://github.com/robson-linvix/zavix-remote-client/actions/runs/38627989019. O executável foi identificado e executado como ELF32/x86, com instalação/remoção, dependências, configuração embutida, abertura GTK, ausência de autorização implícita, aceite local, recusa e encerramento verificados. Os cliques do teste usam o gerenciador de conexões real por IPC; não representam uma sessão remota completa. Captura, teclado e mouse em um desktop real continuam pendentes.
+
 ## Superfície de regressão
 
 As alterações em `Cargo.toml`, `src/lib.rs`, `src/common.rs` e `src/core_main.rs` apenas registram e acionam o perfil sob `target_os=linux` e feature `zavix-linux`. Com a feature desligada, o Linux anterior e o gateway mantêm o caminho existente. Windows, macOS, Android, protocolos e submódulos não são alterados.
@@ -63,4 +65,6 @@ Com essas correções, o cliente abriu e ficou online em um contêiner Ubuntu 22
 
 ## Disponibilização autorizada no portal
 
-Em 14/10/2026, após receber o resultado da homologação parcial, o usuário solicitou disponibilizar esta build na central oficial. O pacote de 64 bits foi publicado em https://remote.zavix.app/download#linux-edition com identificação explícita de versão candidata para testes, Ubuntu 22.04/x86_64/X11 e limitações. O manifesto continua candidate e não houve promoção para estável. Código-fonte e SHA256 acompanham o instalador. Publicação do portal: commit 377a987. A variante de 32 bits só deve ganhar link após aprovação dos testes e conferência dos artefatos.
+Em 14/10/2026, após receber o resultado da homologação parcial, o usuário solicitou disponibilizar esta build na central oficial. O pacote de 64 bits foi publicado em https://remote.zavix.app/download#linux-edition com identificação explícita de versão candidata para testes, Ubuntu 22.04/x86_64/X11 e limitações. O manifesto continua candidate e não houve promoção para estável. Código-fonte e SHA256 acompanham o instalador. Publicação do portal: commit 377a987.
+
+A variante de 32 bits foi publicada em https://remote.zavix.app/download#linux32-edition após aprovação do CI e teste adicional em userspace Debian 12 i386 limpo, com usuário comum. Nesse laboratório, o cliente ficou online no servidor ZAVIX e os controles locais foram exercitados pelo IPC real. O kernel do host é x86_64; não houve teste em CPU física antiga nem homologação de captura/controle em sessão remota completa. O manifesto permanece candidate. Instalador SHA256 `98789e754f18fc5863f082b48c86f138ee8e1e12f6779cc910724f226c729311`, conferido também no download pelo botão público. Publicação estática do portal: commit `da50361`, sem reinício do serviço.
