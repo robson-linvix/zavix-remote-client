@@ -131,7 +131,8 @@ pub fn run() -> ResultType<()> {
     if let Ok(executable) = std::env::current_exe() {
         let icon = executable.with_file_name("zavix.png");
         if icon.is_file() {
-            let image = gtk::Image::from_file(icon);
+            let pixbuf = gtk::gdk_pixbuf::Pixbuf::from_file_at_scale(icon, 96, 96, true)?;
+            let image = gtk::Image::from_pixbuf(Some(&pixbuf));
             image.set_halign(gtk::Align::Start);
             layout.pack_start(&image, false, false, 0);
         }

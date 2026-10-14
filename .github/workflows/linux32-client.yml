@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
   push:
     branches: [codex/linux-client-x64]
-    paths: ['.github/workflows/linux32-client.yml', 'scripts/linux32.Dockerfile', 'src/zavix_linux_gtk.rs', 'src/bin/zavixremote_gtk.rs']
+    paths: ['.github/workflows/linux32-client.yml', 'scripts/linux32.Dockerfile', 'scripts/package_linux32.py', 'scripts/test_linux32.py', 'src/zavix_linux_gtk.rs', 'src/bin/zavixremote_gtk.rs']
 permissions:
   contents: read
 concurrency:
@@ -37,6 +37,7 @@ jobs:
       - name: Compile native 32-bit client
         run: |
           docker run --rm -v "$PWD:/src" -v "$HOME/.cargo:/root/.cargo" -v "$HOME/.rustup:/root/.rustup" zavix-linux32-build bash -lc '
+            set -e
             export PATH=/root/.cargo/bin:$PATH
             git config --global --add safe.directory /src
             cargo build --locked --release --target i686-unknown-linux-gnu --bin zavixremote-gtk --features zavix-linux-gtk,linux-pkg-config
@@ -46,11 +47,15 @@ jobs:
       - name: Package and validate native GUI
         run: |
           docker run --rm -v "$PWD:/src" -v "$HOME/.cargo:/root/.cargo" -v "$HOME/.rustup:/root/.rustup" zavix-linux32-build bash -lc '
+            set -e
             export PATH=/root/.cargo/bin:$PATH
             git config --global --add safe.directory /src
             python3 scripts/package_linux32.py
             xvfb-run -a -s "-screen 0 1280x800x24" dbus-run-session -- python3 scripts/test_linux32.py
           '
+      - name: Restore runner ownership for artifact and cache access
+        if: always()
+        run: sudo chown -R "$(id -u):$(id -g)" "$HOME/.cargo" "$GITHUB_WORKSPACE"
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: zavix-linux32-gtk-candidate
