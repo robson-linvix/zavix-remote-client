@@ -43,7 +43,12 @@ jobs:
       - name: Existing Flutter compatibility patch
         run: |
           cd "$(dirname "$(dirname "$(command -v flutter)")")"
-          git apply "$GITHUB_WORKSPACE/.github/patches/flutter_3.24.4_dropdown_menu_enableFilter.diff"
+          patch="$GITHUB_WORKSPACE/.github/patches/flutter_3.24.4_dropdown_menu_enableFilter.diff"
+          if git apply --reverse --check "$patch"; then
+            echo 'Flutter compatibility patch already present in cache'
+          else
+            git apply "$patch"
+          fi
       - uses: dtolnay/rust-toolchain@e97e2d8cc328f1b50210efc529dca0028893a2d9
         with:
           toolchain: '1.75'
