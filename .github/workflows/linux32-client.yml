@@ -50,6 +50,7 @@ jobs:
             set -e
             export PATH=/root/.cargo/bin:$PATH
             git config --global --add safe.directory /src
+            git config --global --add safe.directory /src/libs/hbb_common
             python3 scripts/package_linux32.py
             xvfb-run -a -s "-screen 0 1280x800x24" dbus-run-session -- python3 scripts/test_linux32.py
           '
