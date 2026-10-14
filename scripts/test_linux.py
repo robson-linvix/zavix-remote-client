@@ -39,6 +39,10 @@ def main():
         for path in [executable, *executable.parent.glob('lib/*.so*')]:
             result = subprocess.run(['ldd', str(path)], text=True, capture_output=True)
             assert 'not found' not in result.stdout + result.stderr, str(path) + result.stdout + result.stderr
+        dependencies = command('ldd', str(executable.parent / 'lib/librustdesk.so'))
+        assert 'libyuv.so.0 => /opt/zavixremote/lib/libyuv.so.0' in dependencies, dependencies
+        dependencies = command('ldd', str(executable.parent / 'lib/libyuv.so.0'))
+        assert 'libjpeg.so.8 => /opt/zavixremote/lib/libjpeg.so.8' in dependencies, dependencies
         with (output / 'linux-gui.log').open('w') as log:
             process = subprocess.Popen([str(executable), '--no-server'], stdout=log, stderr=log, start_new_session=True)
             try:

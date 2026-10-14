@@ -17,6 +17,8 @@ def package():
     bundle = ROOT / 'flutter/build/linux/x64/release/bundle'
     executable = bundle / 'zavixremote'
     assert executable.is_file() and 'x86-64' in run('file', str(executable))
+    for library in ['librustdesk.so', 'libyuv.so.0']:
+        run('patchelf', '--set-rpath', '$ORIGIN', str(bundle / 'lib' / library))
     output = ROOT / 'LinuxRelease'
     output.mkdir(exist_ok=True)
     legal = bundle / 'Legal'
