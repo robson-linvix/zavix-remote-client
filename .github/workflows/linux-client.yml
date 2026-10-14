@@ -1,6 +1,13 @@
 name: ZAVIX Remote Linux x64
 on:
   workflow_dispatch:
+  push:
+    branches: [codex/linux-client-x64]
+    paths:
+      - '.github/workflows/linux-client.yml'
+      - 'scripts/*linux.py'
+      - 'src/zavix_linux.rs'
+      - 'branding/linux.json'
 permissions:
   contents: read
   actions: read
