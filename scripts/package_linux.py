@@ -49,7 +49,7 @@ def package():
     (deb / 'DEBIAN/control').write_text(
         f'Package: zavixremote\nVersion: {version}\nArchitecture: amd64\n'
         'Maintainer: LINVIX SOFTWARES LTDA\nSection: net\nPriority: optional\n'
-        'Depends: libc6 (>= 2.35), libgtk-3-0, libayatana-appindicator3-1, libasound2, libpulse0, libxdo3, libxfixes3, libxcb-randr0, libxcb-shape0, libxcb-xfixes0, libgstreamer1.0-0, libgstreamer-plugins-base1.0-0, libssl3, libdbus-1-3, libopus0, libvpx7, libaom3, libva2, libstdc++6\n'
+        'Depends: libc6 (>= 2.35), libgtk-3-0, libegl1, libgl1, libayatana-appindicator3-1, libasound2, libpulse0, libxdo3, libxfixes3, libxcb-randr0, libxcb-shape0, libxcb-xfixes0, libgstreamer1.0-0, libgstreamer-plugins-base1.0-0, libssl3, libdbus-1-3, libopus0, libvpx7, libaom3, libva2, libstdc++6\n'
         'Description: ZAVIX Remote assisted support client\n'
         ' Incoming remote support with local approval; no unattended service is installed.\n')
     (deb / 'usr/bin').mkdir(parents=True)
