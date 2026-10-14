@@ -45,3 +45,9 @@ O pedido de 32 bits permanece pendente. Flutter não oferece alvo desktop Linux 
 As alterações em `Cargo.toml`, `src/lib.rs`, `src/common.rs` e `src/core_main.rs` apenas registram e acionam o perfil sob `target_os=linux` e feature `zavix-linux`. Com a feature desligada, o Linux anterior e o gateway mantêm o caminho existente. Windows, macOS, Android, protocolos e submódulos não são alterados.
 
 O preparo da marca transforma somente arquivos de interface no checkout isolado do build Linux. A lógica nova fica em `src/zavix_linux.rs` e nos scripts Linux. Os workflows existentes permanecem intactos.
+
+## Validação em ambiente limpo (14/10/2026)
+
+O primeiro teste fora do runner encontrou duas dependências mascaradas pelo ambiente de desenvolvimento: o carregador não procurava `libyuv.so.0` ao lado de `librustdesk.so`, e o pacote não declarava `libegl1`. O empacotamento agora define RUNPATH `$ORIGIN` em `librustdesk.so` e `libyuv.so.0`, declara `libegl1`/`libgl1`, e o teste verifica que libyuv e libjpeg são resolvidas dentro do pacote instalado.
+
+Com essas correções, o cliente abriu e ficou online em um contêiner Ubuntu 22.04/Xvfb isolado. A conexão de laboratório chegou ao cliente pelo relay, mas o diálogo de aceite não foi iniciado nesse ambiente sem loginctl/sessão gráfica registrada. O caminho existente de `is_prelogin()` não deve ser alterado apenas para contornar a ausência de uma sessão real no laboratório. Captura, teclado, mouse e aceite continuam pendentes em desktop Linux com usuário logado. Não há promoção para estável baseada nesse teste parcial.
