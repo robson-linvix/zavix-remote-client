@@ -19,6 +19,14 @@ def prepare():
     text = text.replace('gtk_icon_theme_load_icon(theme, "ZAVIX Remote"',
                         'gtk_icon_theme_load_icon(theme, "zavixremote"')
     runner.write_text(text)
+    for name in ['flutter/lib/common.dart', 'flutter/lib/desktop/pages/desktop_home_page.dart']:
+        path = ROOT / name
+        text = path.read_text().replace(
+            "(isWindows || isMacOS) && bind.mainGetAppNameSync() == 'ZAVIXRemote'",
+            "(isWindows || isMacOS || isLinux) && bind.mainGetAppNameSync() == 'ZAVIXRemote'")
+        text = text.replace("(isWindows || isMacOS) && rawName == 'ZAVIXRemote'",
+                            "(isWindows || isMacOS || isLinux) && rawName == 'ZAVIXRemote'")
+        path.write_text(text)
     print('Linux client: assisted profile, dedicated app identity and desktop branding')
 
 if __name__ == '__main__':

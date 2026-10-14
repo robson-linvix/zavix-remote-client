@@ -1031,6 +1031,8 @@ pub fn check_software_update() {
 // Because the url is always `https://api.rustdesk.com/version/latest`.
 #[tokio::main(flavor = "current_thread")]
 pub async fn do_check_software_update() -> hbb_common::ResultType<()> {
+    #[cfg(all(target_os = "linux", feature = "zavix-linux"))]
+    return Ok(());
     // ZAVIX modifications, 2026-10-12: never download an upstream replacement on Windows.
     #[cfg(windows)]
     return Ok(());
