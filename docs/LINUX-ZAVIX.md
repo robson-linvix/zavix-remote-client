@@ -45,6 +45,8 @@ zavixremote
 
 O mesmo nome de pacote `zavixremote` é usado nas duas arquiteturas; instale a variante compatível com o sistema. O pacote portátil também depende das bibliotecas listadas no `.deb`.
 
+O alvo Rust i686 requer SSE2; não declarar compatibilidade com todos os processadores antigos de 32 bits. Referência: https://github.com/rust-lang/portable-simd/blob/master/beginners-guide.md. O runner executa código de 32 bits sobre kernel de 64 bits, não em CPU física antiga.
+
 ## Superfície de regressão
 
 As alterações em `Cargo.toml`, `src/lib.rs`, `src/common.rs` e `src/core_main.rs` apenas registram e acionam o perfil sob `target_os=linux` e feature `zavix-linux`. Com a feature desligada, o Linux anterior e o gateway mantêm o caminho existente. Windows, macOS, Android, protocolos e submódulos não são alterados.

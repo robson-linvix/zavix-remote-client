@@ -60,7 +60,7 @@ def main():
     for name in [stem+'.deb',stem+'.tar.gz',source_name]:
         p=out/name
         files.append({'name':name,'bytes':p.stat().st_size,'sha256':hashlib.sha256(p.read_bytes()).hexdigest()})
-    manifest={'product':'ZAVIX Remote','version':version,'platform':'linux','architecture':'x86','debian_architecture':'i386','ui':'GTK3','minimum_glibc':'2.36','tested_distribution':'Debian 12','channel':'candidate','mode':'assisted','revision':run('git','rev-parse','HEAD'),'files':files}
+    manifest={'product':'ZAVIX Remote','version':version,'platform':'linux','architecture':'x86','debian_architecture':'i386','minimum_cpu':'i686 with SSE2','ui':'GTK3','minimum_glibc':'2.36','tested_distribution':'Debian 12','channel':'candidate','mode':'assisted','revision':run('git','rev-parse','HEAD'),'files':files}
     (out/'manifest.json').write_text(json.dumps(manifest,indent=2)+'\n')
     (out/'SHA256SUMS.txt').write_text(''.join(f['sha256']+'  '+f['name']+'\n' for f in files))
     print(json.dumps(manifest,indent=2))
