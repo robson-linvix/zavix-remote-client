@@ -32,6 +32,10 @@ pub fn initialize() -> ResultType<()> {
     config::OVERWRITE_SETTINGS.write().unwrap().extend(brand.settings);
     config::BUILTIN_SETTINGS.write().unwrap().extend(brand.builtin);
     config::HARD_SETTINGS.write().unwrap().extend(brand.hard);
+    #[cfg(feature = "zavix-linux-gtk")]
+    for key in ["enable-file-transfer", "enable-clipboard", "enable-remote-printer", "allow-remote-cm-modification"] {
+        config::OVERWRITE_SETTINGS.write().unwrap().insert(key.into(), "N".into());
+    }
     config::DEFAULT_LOCAL_SETTINGS.write().unwrap().insert("lang".into(), "pt-br".into());
     Ok(())
 }

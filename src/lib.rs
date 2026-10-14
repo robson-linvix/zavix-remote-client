@@ -27,6 +27,8 @@ mod zavix;
 mod zavix_macos;
 #[cfg(all(target_os = "linux", feature = "zavix-linux"))]
 mod zavix_linux;
+#[cfg(all(target_os = "linux", feature = "zavix-linux-gtk"))]
+pub mod zavix_linux_gtk;
 #[cfg(target_os = "android")]
 mod zavix_android;
 #[cfg(not(any(target_os = "ios")))]

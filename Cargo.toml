@@ -21,6 +21,7 @@ name = "service"
 path = "src/service.rs"
 
 [features]
+zavix-linux-gtk = ["zavix-linux", "flutter"]
 zavix-linux = []
 zavix-macos = []
 inline = []
@@ -292,3 +293,8 @@ rpath = true
 
 [profile.dev]
 debug = 1
+
+[[bin]]
+name = "zavixremote-gtk"
+path = "src/bin/zavixremote_gtk.rs"
+required-features = ["zavix-linux-gtk"]
