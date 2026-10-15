@@ -1,22 +1,39 @@
 import 'dart:async';
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../../common.dart';
 import '../../models/platform_model.dart';
 import '../../models/server_model.dart';
 
-class ZavixAndroidEnrollment {
+bool get isZavixManagedAndroid => isAndroid &&
+    bind.mainGetBuildinOption(key: 'zavix-android-managed') == 'Y';
+
+class ZavixAndroidEnrollment extends ChangeNotifier {
   final ServerModel model;
-  final void Function(String serial, String status) changed;
+  String serial = '', status = '';
   Timer? _timer;
   bool _busy = false;
-  ZavixAndroidEnrollment(this.model, this.changed);
+  ZavixAndroidEnrollment(this.model);
 
   void start() {
-    update();
+    if (_timer != null) return;
     _timer = Timer.periodic(const Duration(seconds: 60), (_) => update());
+    update();
   }
-  void dispose() => _timer?.cancel();
+  @override
+  void dispose() {
+    _timer?.cancel();
+    _timer = null;
+    super.dispose();
+  }
+
+  void _changed(String nextSerial, String nextStatus) {
+    if (_timer == null) return;
+    if (nextSerial.isNotEmpty) serial = nextSerial;
+    status = nextStatus;
+    notifyListeners();
+  }
 
   Future<Map<String, dynamic>> _request(String endpoint, String token, Map<String, dynamic> body) async {
     final client = http.Client();
@@ -42,8 +59,9 @@ class ZavixAndroidEnrollment {
     try {
       final cfg = await _configuration();
       final serial = cfg['serial'] as String? ?? '';
-      changed(serial, '');
+      _changed(serial, '');
       await model.fetchID();
+      await gFFI.invokeMethod('check_service');
       final packet = {'serial': serial, 'rustdesk_id': model.serverId.text.replaceAll(' ', ''),
         'model': cfg['model'], 'app_version': cfg['app_version']};
       var token = cfg['token'] as String? ?? '';
@@ -61,9 +79,9 @@ class ZavixAndroidEnrollment {
       }
       await _request('enrollment/activate', token, {...packet, 'password_saved': true});
       await _request('heartbeat', token, {...packet, 'capture_ready': model.mediaOk, 'control_ready': model.inputOk});
-      changed(serial, 'Vinculado ao painel ZAVIX Remote.');
+      _changed(serial, 'Vinculado ao painel ZAVIX Remote.');
     } catch (_) {
-      changed('', 'Não foi possível atualizar o vínculo. Nova tentativa automática em um minuto.');
+      _changed('', 'Não foi possível atualizar o vínculo. Nova tentativa automática em um minuto.');
     } finally { _busy = false; }
   }
 
