@@ -3,11 +3,13 @@ import 'package:flutter_hbb/mobile/pages/server_page.dart';
 import 'package:flutter_hbb/mobile/pages/settings_page.dart';
 import 'package:flutter_hbb/web/settings_page.dart';
 import 'package:get/get.dart';
+import 'package:provider/provider.dart';
 import '../../common.dart';
 import '../../common/widgets/chat_page.dart';
 import '../../models/platform_model.dart';
 import '../../models/state_model.dart';
 import 'connection_page.dart';
+import '../widgets/zavix_android_enrollment.dart';
 
 abstract class PageShape extends Widget {
   final String title = "";
@@ -61,7 +63,7 @@ class HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
-    return WillPopScope(
+    final home = WillPopScope(
         onWillPop: () async {
           if (_selectedIndex != 0) {
             setState(() {
@@ -104,6 +106,13 @@ class HomePageState extends State<HomePage> {
           ),
           body: _pages.elementAt(_selectedIndex),
         ));
+    return isZavixManagedAndroid
+        ? ChangeNotifierProvider(
+            create: (_) => ZavixAndroidEnrollment(gFFI.serverModel)..start(),
+            lazy: false,
+            child: home,
+          )
+        : home;
   }
 
   Widget appTitle() {

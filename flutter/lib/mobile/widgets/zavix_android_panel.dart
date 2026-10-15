@@ -1,13 +1,12 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:provider/provider.dart';
 import '../../common.dart';
 import '../../models/platform_model.dart';
 import '../../models/server_model.dart';
 import 'zavix_android_enrollment.dart';
-
-bool get isZavixManagedAndroid => isAndroid &&
-    bind.mainGetBuildinOption(key: 'zavix-android-managed') == 'Y';
+export 'zavix_android_enrollment.dart' show isZavixManagedAndroid;
 
 class ZavixAndroidPanel extends StatefulWidget {
   final ServerModel model;
@@ -19,25 +18,9 @@ class ZavixAndroidPanel extends StatefulWidget {
 class _ZavixAndroidPanelState extends State<ZavixAndroidPanel> {
   bool _sending = false;
   String _message = '';
-  String _serial = '', _enrollmentMessage = '';
-  late final ZavixAndroidEnrollment _enrollment;
-
-  @override
-  void initState() {
-    super.initState();
-    _enrollment = ZavixAndroidEnrollment(widget.model, (serial, status) {
-      if (mounted) setState(() {
-        if (serial.isNotEmpty) _serial = serial;
-        _enrollmentMessage = status;
-      });
-    });
-    _enrollment.start();
-  }
-
-  @override
-  void dispose() { _enrollment.dispose(); super.dispose(); }
 
   Future<void> _setPassword() async {
+    final enrollment = context.read<ZavixAndroidEnrollment>();
     final password = TextEditingController();
     final confirmation = TextEditingController();
     final accepted = await showDialog<bool>(context: context, builder: (context) => AlertDialog(
@@ -57,7 +40,7 @@ class _ZavixAndroidPanelState extends State<ZavixAndroidPanel> {
         if (mounted) setState(() { _message = 'Use pelo menos 12 caracteres e confirme a mesma senha.'; });
       } else {
         final ok = await bind.mainSetPermanentPasswordWithResult(password: password.text);
-        final synced = ok && await _enrollment.syncPassword(password.text);
+        final synced = ok && await enrollment.syncPassword(password.text);
         widget.model.updatePasswordModel();
         if (mounted) setState(() { _message = ok ? (synced ? 'Senha salva e sincronizada com o painel.' : 'Senha salva neste equipamento. Atualize também o portal.') : 'Não foi possível salvar a senha.'; });
       }
@@ -124,6 +107,7 @@ class _ZavixAndroidPanelState extends State<ZavixAndroidPanel> {
   Widget build(BuildContext context) => FutureBuilder<String>(
     future: bind.mainGetCommon(key: 'permanent-password-set'),
     builder: (context, snapshot) {
+      final enrollment = context.watch<ZavixAndroidEnrollment>();
       final passwordSet = snapshot.data == 'true';
       return Padding(padding: const EdgeInsets.all(12), child: Card(child: Padding(
         padding: const EdgeInsets.all(16), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -131,8 +115,8 @@ class _ZavixAndroidPanelState extends State<ZavixAndroidPanel> {
             style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: 8),
           Text('ID do equipamento: ${widget.model.serverId.text}'),
-          if (_serial.isNotEmpty) Text('Número de série: $_serial'),
-          if (_enrollmentMessage.isNotEmpty) Text(_enrollmentMessage),
+          if (enrollment.serial.isNotEmpty) Text('Número de série: ${enrollment.serial}'),
+          if (enrollment.status.isNotEmpty) Text(enrollment.status),
           Text(passwordSet ? 'Senha individual configurada.' : 'Defina uma senha exclusiva para este equipamento antes do primeiro acesso.'),
           Text('Captura: ${widget.model.mediaOk ? "disponível" : "permissão pendente"}'),
           Text('Controle: ${widget.model.inputOk ? "habilitado" : "permissão pendente"}'),
