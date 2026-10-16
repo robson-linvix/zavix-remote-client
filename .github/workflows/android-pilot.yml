@@ -140,6 +140,8 @@ jobs:
           ANDROID_NDK_ROOT: ${{ steps.ndk.outputs.ndk-path }}
           RUSTFLAGS: '-C link-arg=-Wl,-z,max-page-size=16384 -C link-arg=-Wl,-z,common-page-size=16384'
         run: |
+          # The official mirror retains the pinned libwebm commit when googlesource is unavailable.
+          git config --global url."https://github.com/webmproject/libwebm".insteadOf "https://chromium.googlesource.com/webm/libwebm"
           cargo install cargo-ndk --version 3.1.2 --locked
           cargo ndk --platform 24 --target '${{ matrix.target }}' build --locked --release --lib --features flutter,hwcodec
           mkdir -p 'flutter/android/app/src/main/jniLibs/${{ matrix.abi }}'
