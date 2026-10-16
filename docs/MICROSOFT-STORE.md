@@ -9,6 +9,8 @@ Estas edições são separadas dos EXE/MSI distribuídos no site. A compilação
 - Atendimento assistido: abrir o aplicativo, informar o ID e aceitar a solicitação.
 - Fechar a janela principal encerra o aplicativo e o acesso dessa edição.
 - Sem serviço, inicialização automática, elevação, controle da tela UAC ou drivers.
+- Sem o modo que oculta a tela local: o helper opcional `WindowInjection.dll`
+  exige Visual C++ Runtime externo e não integra o pacote assistido da Store.
 - Nomes e logos públicos preservados; perfis internos `ZAVIXRemoteStore` e
   `LinvixRemoteStore` evitam compartilhar o serviço/configuração dos instaladores.
 - O cliente só recebe conexões; servidor e chave continuam embutidos.

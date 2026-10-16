@@ -60,7 +60,7 @@ def build(bundle, output, makeappx, identity_path=None):
     version = f'{major}.{minor}.{patch*1000+revision}.0'
     output.mkdir(parents=True, exist_ok=False)
     stage = output / 'payload'
-    shutil.copytree(bundle, stage, ignore=shutil.ignore_patterns('*.pdb', 'custom.txt'))
+    shutil.copytree(bundle, stage, ignore=shutil.ignore_patterns('*.pdb', 'custom.txt', 'WindowInjection.dll'))
     assets(stage / 'Assets', edition)
     root = E.Element('{'+NS+'}Package', {'IgnorableNamespaces': 'uap rescap'})
     def node(parent, name, **attrs):

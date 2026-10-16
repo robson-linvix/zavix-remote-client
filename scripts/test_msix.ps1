@@ -8,6 +8,11 @@ $capabilities = @($xml.Package.Capabilities.ChildNodes | ForEach-Object { $_.Nam
 if (($capabilities | Sort-Object) -join ',' -ne 'internetClient,runFullTrust') { throw 'Unexpected MSIX capabilities' }
 if ($xml.OuterXml -match 'allowElevation|packagedServices|localSystemServices|windows.service|startupTask') { throw 'Store package requests forbidden assisted-edition capabilities' }
 $source = Get-ChildItem $Output -Filter '*.msix' | Select-Object -First 1
+Add-Type -AssemblyName System.IO.Compression.FileSystem
+$archive = [System.IO.Compression.ZipFile]::OpenRead($source.FullName)
+try {
+    if ($archive.Entries | Where-Object { $_.Name -eq 'WindowInjection.dll' }) { throw 'Store assisted package includes the optional privacy injection helper' }
+} finally { $archive.Dispose() }
 $originalHash = (Get-FileHash $source.FullName -Algorithm SHA256).Hash
 $temporary = Join-Path $env:RUNNER_TEMP ('msix-test-' + [guid]::NewGuid())
 New-Item -ItemType Directory $temporary | Out-Null
