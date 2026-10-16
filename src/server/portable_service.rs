@@ -995,6 +995,7 @@ pub mod client {
     // 2) Start helper process (direct or logon) with shmem argument.
     // 3) Keep STARTING=true until IPC ping/pong marks RUNNING, or timeout watchdog resets it.
     pub(crate) fn start_portable_service(para: StartPara) -> ResultType<()> {
+        if cfg!(feature = "zavix-msix") { bail!("Portable services are unavailable in the Store assisted edition"); }
         log::info!("start portable service");
         let launch_token = {
             // Keep lock guards in explicit short scopes to make it obvious

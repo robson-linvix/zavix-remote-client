@@ -43,6 +43,10 @@ pub fn core_main() -> Option<Vec<String>> {
     if crate::zavix::diagnostics_requested() {
         return None;
     }
+    #[cfg(all(windows, feature = "zavix-msix"))]
+    if crate::zavix_msix::handle_entrypoint() {
+        return None;
+    }
     #[cfg(all(target_os = "macos", feature = "zavix-macos"))]
     if crate::zavix_macos::diagnostics_requested() {
         return None;

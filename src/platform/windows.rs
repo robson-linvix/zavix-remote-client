@@ -2354,6 +2354,7 @@ pub fn run_background(exe: &str, arg: &str) -> ResultType<bool> {
 }
 
 pub fn run_uac(exe: &str, arg: &str) -> ResultType<bool> {
+    if cfg!(feature = "zavix-msix") { bail!("Elevation is unavailable in the Store assisted edition"); }
     let wop = wide_string("runas");
     let wexe = wide_string(exe);
     let warg;
@@ -2396,6 +2397,7 @@ pub fn elevate(arg: &str) -> ResultType<bool> {
 }
 
 pub fn run_as_system(arg: &str) -> ResultType<()> {
+    if cfg!(feature = "zavix-msix") { bail!("System access is unavailable in the Store assisted edition"); }
     let exe = std::env::current_exe()?.to_string_lossy().to_string();
     if impersonate_system::run_as_system(&exe, arg).is_err() {
         bail!(format!("Failed to run {} as system", exe));

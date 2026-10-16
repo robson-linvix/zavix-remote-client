@@ -1,0 +1,179 @@
+# Isolated assisted Store candidates. Does not publish releases or change website installers.
+name: Remote Microsoft Store MSIX
+'on':
+  workflow_dispatch:
+permissions:
+  contents: read
+env:
+  PYTHONUTF8: '1'
+  SCITER_RUST_VERSION: '1.75'
+  RUST_VERSION: '1.75'
+  LLVM_VERSION: 15.0.6
+  FLUTTER_VERSION: 3.24.5
+  VCPKG_BINARY_SOURCES: clear;files,C:/zavix-vcpkg-cache,readwrite
+  VCPKG_COMMIT_ID: 9e593bb18ea69cc5095e012465dcd675a822ed0d
+  VCPKG_CMAKE_VERSION: 4.3.0
+  VERSION: 1.5.0.6
+  UPLOAD_ARTIFACT: 'true'
+  FLUTTER_WINDOWS_ARM_VERSION: 3.44.9
+jobs:
+  generate-bridge:
+    uses: ./.github/workflows/bridge.yml
+  build-RustDeskTempTopMostWindow:
+    uses: ./.github/workflows/third-party-RustDeskTempTopMostWindow.yml
+    with:
+      upload-artifact: true
+      target: windows-2022
+      configuration: Release
+      platform: x64
+      target_version: Windows10
+  build-for-windows-flutter:
+    name: ${{ matrix.brand }} Store x64
+    needs:
+    - build-RustDeskTempTopMostWindow
+    - generate-bridge
+    runs-on: ${{ matrix.job.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        brand: [zavix, linvix]
+        job:
+        - target: x86_64-pc-windows-msvc
+          os: windows-2022
+          arch: x86_64
+          flutter-arch: x64
+          vcpkg-triplet: x64-windows-static
+          build-args: --vram
+    steps:
+    - name: Checkout source code
+      uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+      with:
+        submodules: recursive
+    - name: Select trusted Windows brand
+      run: |
+        python scripts/prepare_msix_client.py "${{ matrix.brand }}"
+        $brand = Get-Content branding/zavix.json | ConvertFrom-Json
+        "CLIENT_APP=$($brand.app_name)" | Out-File -Append -Encoding utf8 $env:GITHUB_ENV
+    - name: Restore bridge files
+      uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+      with:
+        name: ${{ matrix.job.arch == 'aarch64' && 'bridge-artifact-flutter-3.44' || 'bridge-artifact' }}
+        path: ./
+    - name: Install LLVM and Clang
+      uses: KyleMayes/install-llvm-action@ebc0426251bc40c7cd31162802432c68818ab8f0
+      with:
+        version: ${{ env.LLVM_VERSION }}
+    - name: Install flutter
+      id: flutter
+      uses: subosito/flutter-action@2783a3f08e1baf891508463f8c6653c258246225
+      with:
+        channel: stable
+        flutter-version: ${{ matrix.job.arch == 'aarch64' && env.FLUTTER_WINDOWS_ARM_VERSION || env.FLUTTER_VERSION }}
+        architecture: x64
+    - name: Replace engine with rustdesk custom flutter engine
+      if: ${{ matrix.job.arch == 'x86_64' }}
+      run: 'flutter doctor -v
+
+        flutter precache --windows
+
+        Invoke-WebRequest -Uri https://api.github.com/repos/rustdesk/engine/releases/assets/210168939 -Headers @{Accept=''application/octet-stream''}
+        -OutFile windows-x64-release.zip
+
+        $actual = (Get-FileHash windows-x64-release.zip -Algorithm SHA256).Hash.ToLower()
+
+        if ($actual -ne ''ec8cabf36ee4ff24c8d98de25b00e70781eb03876265aee84d0fe554a110036e'') { throw ''Flutter engine hash
+        mismatch'' }
+
+        Expand-Archive -Path windows-x64-release.zip -DestinationPath windows-x64-release
+
+        Copy-Item -Force windows-x64-release/* ''${{ steps.flutter.outputs.CACHE-PATH }}/bin/cache/artifacts/engine/windows-x64-release/''
+
+        '
+    - name: Patch flutter
+      if: ${{ matrix.job.arch == 'x86_64' }}
+      shell: bash
+      run: "cp .github/patches/flutter_3.24.4_dropdown_menu_enableFilter.diff $(dirname $(dirname $(which flutter)))\ncd $(dirname\
+        \ $(dirname $(which flutter)))\nif [[ \"3.24.5\" == ${{env.FLUTTER_VERSION}} ]]; then\n  git apply flutter_3.24.4_dropdown_menu_enableFilter.diff\n\
+        fi\n"
+    - name: Install Rust toolchain
+      uses: dtolnay/rust-toolchain@e97e2d8cc328f1b50210efc529dca0028893a2d9
+      with:
+        toolchain: ${{ env.SCITER_RUST_VERSION }}
+        targets: ${{ matrix.job.target }}
+        components: rustfmt
+    - uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32
+      with:
+        prefix-key: ${{ matrix.job.os }}
+    - name: Setup vcpkg with Github Actions binary cache
+      uses: lukka/run-vcpkg@b1a0dd252f06b9e25b3c022a9a03bd7a427fb6a2
+      with:
+        vcpkgDirectory: C:\vcpkg
+        vcpkgGitCommitId: ${{ env.VCPKG_COMMIT_ID }}
+        doNotCache: false
+    - name: Restore native binary packages
+      id: native-cache
+      uses: actions/cache/restore@6f8efc29b200d32929f49075959781ed54ec270c
+      with:
+        path: C:/zavix-vcpkg-cache
+        key: zavix-vcpkg-${{ runner.os }}-${{ runner.arch }}-${{ env.VCPKG_COMMIT_ID }}-${{ hashFiles('vcpkg.json', 'res/vcpkg/**',
+          'res/vcpkg-triplets/**') }}-v1
+    - name: Create native cache directory
+      run: New-Item -ItemType Directory -Force -Path C:/zavix-vcpkg-cache | Out-Null
+    - name: Install vcpkg dependencies
+      env:
+        VCPKG_DEFAULT_HOST_TRIPLET: ${{ matrix.job.vcpkg-triplet }}
+      run: "for attempt in 1 2 3; do\n  if \"$VCPKG_ROOT/vcpkg\" install --triplet x64-windows-static --x-install-root=\"\
+        $VCPKG_ROOT/installed\"; then\n    exit 0\n  fi\n  if [ \"$attempt\" -eq 3 ]; then\n    find \"$VCPKG_ROOT/buildtrees/libyuv\"\
+        \ -name '*err.log' -exec cat {} \\; || true\n    exit 1\n  fi\n  sleep 15\ndone\n"
+      shell: bash
+    - name: Preserve compiled native packages
+      if: ${{ always() && steps.native-cache.outputs.cache-hit != 'true' }}
+      uses: actions/cache/save@6f8efc29b200d32929f49075959781ed54ec270c
+      with:
+        path: C:/zavix-vcpkg-cache
+        key: zavix-vcpkg-${{ runner.os }}-${{ runner.arch }}-${{ env.VCPKG_COMMIT_ID }}-${{ hashFiles('vcpkg.json', 'res/vcpkg/**',
+          'res/vcpkg-triplets/**') }}-v1
+    - name: Build ZAVIX Windows
+      run: 'python .\build.py --portable --flutter --skip-portable-pack --hwcodec --vram
+
+        if ($LASTEXITCODE -ne 0) { throw ''Windows build failed'' }
+
+        Move-Item ./flutter/build/windows/x64/runner/Release ./dist
+
+        '
+    - name: Download RustDeskTempTopMostWindow artifacts
+      uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+      with:
+        name: ${{ matrix.job.arch == 'aarch64' && 'topmostwindow-artifacts-ARM64' || 'topmostwindow-artifacts-x64' }}
+        path: ./dist
+    - name: Verify single assisted approval button
+      working-directory: flutter
+      run: flutter test test/zavix_approval_buttons_test.dart
+    - name: Verify runtime configuration and renaming protection
+      run: ./scripts/test_msix_native.ps1 -Bundle ./dist
+    - name: Collect original dependency notices
+      run: 'python scripts/collect_licenses.py
+
+        if ($LASTEXITCODE -ne 0) { throw ''License collection failed'' }'
+    - name: Package MSIX with Windows SDK validation
+      run: |
+        python -m pip install Pillow==11.3.0
+        if ($LASTEXITCODE -ne 0) { throw 'Pillow installation failed' }
+        $sdk = Get-ChildItem 'C:/Program Files (x86)/Windows Kits/10/bin' -Directory | Where-Object { Test-Path (Join-Path $_.FullName 'x64/MakeAppx.exe') } | Sort-Object Name -Descending | Select-Object -First 1
+        if (-not $sdk) { throw 'Windows SDK packaging tools missing' }
+        "SIGNTOOL=$($sdk.FullName)/x64/signtool.exe" | Out-File -Append -Encoding utf8 $env:GITHUB_ENV
+        python scripts/build_msix.py --makeappx "$($sdk.FullName)/x64/MakeAppx.exe"
+        if ($LASTEXITCODE -ne 0) { throw 'MSIX packaging failed' }
+    - name: Install, activate, close and uninstall MSIX
+      run: ./scripts/test_msix.ps1 -SignTool $env:SIGNTOOL
+    - name: Upload Store candidates and evidence
+      if: always()
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+      with:
+        name: ${{ matrix.brand }}-windows-msix-candidate
+        path: |
+          MSIXOutput/
+          windows-msix-native.json
+        if-no-files-found: warn
+        retention-days: 30
+    timeout-minutes: 120
