@@ -35,6 +35,9 @@ try {
         if ($process) { break }
     }
     if (-not $process -or -not $process.Path.StartsWith($package.InstallLocation)) { throw 'Installed Store application did not open from its package' }
+    Add-Type 'using System; using System.Text; using System.Runtime.InteropServices; public static class MsixWindow { [DllImport("user32.dll", CharSet=CharSet.Unicode)] public static extern int GetClassName(IntPtr handle, StringBuilder name, int size); }'
+    $windowClass = [System.Text.StringBuilder]::new(256)
+    if ([MsixWindow]::GetClassName($process.MainWindowHandle, $windowClass, 256) -eq 0 -or $windowClass.ToString() -ne ('FLUTTER_RUNNER_' + $manifest.app_name)) { throw 'Store window identity could collide with the desktop edition' }
     Add-Type -AssemblyName System.Drawing
     Add-Type -AssemblyName System.Windows.Forms
     $screen = [System.Windows.Forms.SystemInformation]::VirtualScreen
