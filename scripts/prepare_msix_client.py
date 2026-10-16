@@ -18,6 +18,12 @@ def prepare(edition):
             continue
         path = ROOT / name
         path.write_text(path.read_text(encoding='utf-8').replace(app, store_app), encoding='utf-8')
+    window = ROOT / 'flutter/windows/runner/win32_window.cpp'
+    source = window.read_text(encoding='utf-8')
+    if source.count('L"FLUTTER_RUNNER_WIN32_WINDOW"') != 1:
+        raise ValueError('Window class declaration changed')
+    window.write_text(source.replace('L"FLUTTER_RUNNER_WIN32_WINDOW"',
+                                    f'L"FLUTTER_RUNNER_{store_app}"'), encoding='utf-8')
     cargo = ROOT / 'Cargo.toml'
     source = cargo.read_text(encoding='utf-8')
     old = 'default = ["use_dasp"]'
