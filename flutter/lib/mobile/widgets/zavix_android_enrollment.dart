@@ -63,7 +63,9 @@ class ZavixAndroidEnrollment extends ChangeNotifier {
       await model.fetchID();
       await gFFI.invokeMethod('check_service');
       final packet = {'serial': serial, 'rustdesk_id': model.serverId.text.replaceAll(' ', ''),
-        'model': cfg['model'], 'app_version': cfg['app_version']};
+        'model': cfg['model'], 'app_version': cfg['app_version'],
+        for (final key in ['android_version', 'android_sdk', 'sunmi_os_version', 'os_build', 'boot_enabled'])
+          if (cfg.containsKey(key)) key: cfg[key]};
       var token = cfg['token'] as String? ?? '';
       final ticket = cfg['ticket'] as String? ?? '';
       if (token.isEmpty && ticket.isEmpty) return;

@@ -36,6 +36,10 @@ object ZavixManagedAndroid {
     }
 
     fun install(context: Context) {
+        if (BuildConfig.ZAVIX_MANAGED) {
+            val prefs = context.getSharedPreferences(KEY_SHARED_PREFERENCES, Context.MODE_PRIVATE)
+            if (!prefs.contains(KEY_START_ON_BOOT_OPT)) prefs.edit().putBoolean(KEY_START_ON_BOOT_OPT, true).apply()
+        }
         record(context, "app_started")
         val appContext = context.applicationContext
         if (crashInstalled) return
@@ -60,7 +64,7 @@ object ZavixManagedAndroid {
             .put("abis", JSONArray(Build.SUPPORTED_ABIS.toList())).put("service_ready", MainService.isReady)
             .put("capturing", MainService.isStart).put("input_enabled", InputService.isOpen)
             .put("boot_enabled", context.getSharedPreferences(KEY_SHARED_PREFERENCES, Context.MODE_PRIVATE)
-                .getBoolean(KEY_START_ON_BOOT_OPT, false)).put("events", events).toString()
+                .getBoolean(KEY_START_ON_BOOT_OPT, true)).put("events", events).toString()
     }
 
     fun enableBoot(context: Context): Boolean {
@@ -74,7 +78,7 @@ object ZavixManagedAndroid {
     fun restartFromBoot(context: Context) {
         record(context, "boot_received")
         val prefs = context.getSharedPreferences(KEY_SHARED_PREFERENCES, Context.MODE_PRIVATE)
-        if (!prefs.getBoolean(KEY_START_ON_BOOT_OPT, false)) return
+        if (!prefs.getBoolean(KEY_START_ON_BOOT_OPT, true)) return
         if (Build.VERSION.SDK_INT > Build.VERSION_CODES.P) {
             record(context, "boot_requires_open")
             return
