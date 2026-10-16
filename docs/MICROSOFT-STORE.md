@@ -73,6 +73,8 @@ O artefato inclui fontes correspondentes, hashes e evidências.
 
 Ainda são necessários: identidade oficial, sessão real em Windows 10/11,
 Windows App Certification Kit e capturas finais para a ficha da Store.
+Antes da publicação, disponibilizar as fontes específicas destas edições na
+página Privacidade e licença, preservando os instaladores atuais no site.
 Uma compilação bem-sucedida não equivale à certificação ou aprovação da Store.
 
 ## Superfície de regressão
@@ -82,6 +84,8 @@ Uma compilação bem-sucedida não equivale à certificação ou aprovação da 
 - `src/core_main.rs`: chama o bloqueio de comandos e diagnóstico somente quando
   a feature Windows Store está compilada.
 - `src/platform/windows.rs`: impede `run_uac` e `run_as_system` nessa feature.
+- `src/platform/windows/installer_shell.rs`: impede a elevação do instalador
+  embutido, que utiliza um caminho diferente de `run_uac`.
 - `src/server/portable_service.rs`: impede o helper de serviço nessa feature.
 - `src/ui_cm_interface.rs`: remove a oferta e a ação de elevação nessa feature.
 - `flutter/lib/desktop/widgets/tabbar_widget.dart`: fechar encerra o processo

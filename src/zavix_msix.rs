@@ -23,6 +23,7 @@ pub fn handle_entrypoint() -> bool {
         "--install", "--uninstall", "--update", "--service", "--server", "--tray",
         "--elevate", "--run-as-system", "--quick_support", "--portable-service",
         "--password", "--import-config", "--option",
+        "--after-install", "--before-uninstall", "--silent-install", "--remove",
     ].iter().any(|prefix| arg.starts_with(prefix))) {
         eprintln!("This Store edition supports assisted access only while the application is open.");
         std::process::exit(64);

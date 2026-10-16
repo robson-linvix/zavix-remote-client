@@ -222,6 +222,7 @@ pub(super) fn run_elevated_and_wait(
     parameters: &str,
     show: bool,
 ) -> ResultType<u32> {
+    if cfg!(feature = "zavix-msix") { bail!("Installer elevation is unavailable in the Store assisted edition"); }
     let parameter_chars = parameters.encode_utf16().count();
     if parameter_chars >= WIN7_SHELL_EXECUTE_MAX_PARAMETER_CHARS {
         bail!("Elevated command is too long: {parameter_chars} UTF-16 characters");
