@@ -2361,6 +2361,14 @@ pub fn rustdesk_interval(i: Interval) -> ThrottledInterval {
 }
 
 pub fn load_custom_client() {
+    #[cfg(all(target_os = "macos", feature = "zavix-macos"))]
+    {
+        if let Err(err) = crate::zavix_macos::initialize() {
+            eprintln!("macOS configuration error: {}", err);
+            std::process::exit(1);
+        }
+        return;
+    }
     // ZAVIX modifications, 2026-10-12: our compiled configuration never reads custom.txt.
     #[cfg(windows)]
     {
