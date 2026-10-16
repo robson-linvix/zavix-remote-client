@@ -98,6 +98,12 @@
             android:excludeFromRecents="true"
             android:theme="@style/Transparent" />
 
+        <activity-alias
+            android:name=".ZavixMdmCaptureActivity"
+            android:targetActivity=".PermissionRequestTransparentActivity"
+            android:exported="true"
+            android:permission="android.permission.DUMP" />
+
         <service
             android:name=".MainService"
             android:enabled="true"

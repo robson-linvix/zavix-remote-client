@@ -16,6 +16,17 @@ class ManagedAndroidProfileTest(unittest.TestCase):
         self.assertEqual(receiver.get(ns+'permission'), 'android.permission.DUMP')
         self.assertEqual(receiver.find('intent-filter/action').get(ns+'name'), 'app.zavix.remote.MDM_PREPARE')
 
+    def test_capture_task_entry_is_restricted_to_administrators(self):
+        import xml.etree.ElementTree as ET
+        ns = '{http://schemas.android.com/apk/res/android}'
+        tree = ET.parse(ROOT/'flutter/android/app/src/main/AndroidManifest.xml')
+        alias = next(r for r in tree.findall('./application/activity-alias')
+                     if r.get(ns+'name') == '.ZavixMdmCaptureActivity')
+        self.assertEqual(alias.get(ns+'targetActivity'), '.PermissionRequestTransparentActivity')
+        self.assertEqual(alias.get(ns+'exported'), 'true')
+        self.assertEqual(alias.get(ns+'permission'), 'android.permission.DUMP')
+        self.assertIsNone(alias.find('intent-filter'))
+
     def test_current_managed_profile(self):
         validate()
 
