@@ -1,4 +1,4 @@
-use hbb_common::config;
+use hbb_common::{config, log};
 use jni::{objects::{JClass, JString}, sys::{jboolean, jstring}, JNIEnv};
 
 #[no_mangle]
