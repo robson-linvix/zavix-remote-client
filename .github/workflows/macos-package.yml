@@ -1,0 +1,76 @@
+name: Assemble and validate macOS universal installers
+on:
+  workflow_dispatch:
+    inputs:
+      native_run:
+        description: Successful macos.yml run with both brands and architectures
+        required: true
+permissions:
+  contents: read
+  actions: read
+jobs:
+  package:
+    runs-on: macos-15-intel
+    strategy:
+      matrix:
+        brand: [zavix, linvix]
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          fetch-depth: 0
+      - name: Validate native run provenance
+        env:
+          GH_TOKEN: ${{ github.token }}
+          NATIVE_RUN: ${{ inputs.native_run }}
+        run: |
+          [[ "$NATIVE_RUN" =~ ^[0-9]+$ ]]
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/$NATIVE_RUN --jq .conclusion)" = success
+          native_revision=$(gh api repos/$GITHUB_REPOSITORY/actions/runs/$NATIVE_RUN --jq .head_sha)
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/$NATIVE_RUN --jq .path)" = .github/workflows/macos.yml
+          while IFS= read -r changed; do
+            case "$changed" in
+              .github/workflows/macos-package.yml|scripts/build_macos.py|scripts/test_macos.py) ;;
+              '') ;;
+              *) echo "Native build input changed: $changed"; exit 1 ;;
+            esac
+          done < <(git diff --name-only "$native_revision" "$GITHUB_SHA")
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+        with:
+          name: macos-${{ matrix.brand }}-x86_64
+          path: MacNative/x86_64
+          run-id: ${{ inputs.native_run }}
+          github-token: ${{ github.token }}
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+        with:
+          name: macos-${{ matrix.brand }}-arm64
+          path: MacNative/arm64
+          run-id: ${{ inputs.native_run }}
+          github-token: ${{ github.token }}
+      - name: Assemble universal slices and branded PKG
+        run: python3 scripts/build_macos.py --native MacNative --out MacRelease --edition '${{ matrix.brand }}'
+      - name: Install and validate actual Intel package
+        run: python3 scripts/test_macos.py --release MacRelease --arch x86_64
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: macos-universal-${{ matrix.brand }}
+          path: MacRelease/
+          if-no-files-found: error
+  validate-arm:
+    needs: package
+    runs-on: macos-15
+    strategy:
+      matrix:
+        brand: [zavix, linvix]
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+        with:
+          name: macos-universal-${{ matrix.brand }}
+          path: MacRelease
+      - name: Install and validate same universal PKG on Apple Silicon
+        run: python3 scripts/test_macos.py --release MacRelease --arch arm64
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: macos-arm-validation-${{ matrix.brand }}
+          path: MacRelease/macos-runtime-arm64.json
+          if-no-files-found: error

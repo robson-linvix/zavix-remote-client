@@ -89,7 +89,7 @@ class _DesktopHomePageState extends State<DesktopHomePage>
         alignment: Alignment.center,
         child: loadLogo(),
       ),
-      if (isWindows && bind.mainGetAppNameSync() == 'ZAVIXRemote')
+      if ((isWindows || isMacOS) && bind.mainGetAppNameSync() == 'ZAVIXRemote')
         Padding(
           padding: const EdgeInsets.fromLTRB(20, 20, 20, 8),
           child: Align(
@@ -306,7 +306,7 @@ class _DesktopHomePageState extends State<DesktopHomePage>
   }
 
   buildPasswordBoard2(BuildContext context, ServerModel model) {
-    if (isWindows && bind.mainGetAppNameSync() == 'ZAVIXRemote' &&
+    if ((isWindows || isMacOS) && bind.mainGetAppNameSync() == 'ZAVIXRemote' &&
         model.approveMode == 'click') {
       return Container(
         margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 13),
@@ -437,7 +437,7 @@ class _DesktopHomePageState extends State<DesktopHomePage>
                 Align(
                   alignment: Alignment.centerLeft,
                   child: Text(
-                    isWindows && bind.mainGetAppNameSync() == 'ZAVIXRemote'
+                    (isWindows || isMacOS) && bind.mainGetAppNameSync() == 'ZAVIXRemote'
                         ? 'Assistência Remota'
                         : translate("Your Desktop"),
                     style: Theme.of(context).textTheme.titleLarge,
@@ -450,7 +450,7 @@ class _DesktopHomePageState extends State<DesktopHomePage>
           ),
           if (!isOutgoingOnly)
             Text(
-              isWindows && bind.mainGetAppNameSync() == 'ZAVIXRemote'
+              (isWindows || isMacOS) && bind.mainGetAppNameSync() == 'ZAVIXRemote'
                   ? 'Informe o ID e senha apenas para pessoas autorizadas dentro dos canais oficiais de atendimento ao cliente Linvix e Zavix.\n\nPara conceder o acesso, ao ser solicitado clique em "Aceitar".'
                   : translate("desk_tip"),
               overflow: TextOverflow.clip,

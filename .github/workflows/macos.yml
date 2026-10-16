@@ -1,0 +1,96 @@
+name: ZAVIX and Linvix Remote macOS
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+env:
+  FLUTTER_VERSION: 3.24.5
+  MACOSX_DEPLOYMENT_TARGET: '11.0'
+  VCPKG_COMMIT_ID: 9e593bb18ea69cc5095e012465dcd675a822ed0d
+  VCPKG_BINARY_SOURCES: clear;files,/tmp/zavix-macos-vcpkg-cache,readwrite
+jobs:
+  bridge:
+    uses: ./.github/workflows/bridge.yml
+  native:
+    needs: bridge
+    strategy:
+      fail-fast: false
+      matrix:
+        brand: [zavix, linvix]
+        machine:
+          - {runner: macos-15-intel, arch: x86_64, triplet: x64-osx}
+          - {runner: macos-15, arch: arm64, triplet: arm64-osx}
+    runs-on: ${{ matrix.machine.runner }}
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          submodules: recursive
+      - name: Select Xcode and trusted macOS brand
+        run: |
+          sudo xcode-select -s /Applications/Xcode_16.4.app/Contents/Developer
+          brew install nasm
+          echo "LIBCLANG_PATH=/Applications/Xcode_16.4.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib" >> "$GITHUB_ENV"
+          python3 scripts/prepare_macos.py '${{ matrix.brand }}'
+          python3 -c 'import json,os; b=json.load(open("macos-build/brand.json")); open(os.environ["GITHUB_ENV"],"a").write("CLIENT_APP="+b["app_name"]+"\nCLIENT_VERSION="+b["version"]+"\n")'
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+        with:
+          name: bridge-artifact
+          path: ./
+      - uses: subosito/flutter-action@2783a3f08e1baf891508463f8c6653c258246225
+        with:
+          channel: stable
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          architecture: ${{ matrix.machine.arch == 'arm64' && 'arm64' || 'x64' }}
+      - name: Existing Flutter compatibility patch
+        run: |
+          cd "$(dirname "$(dirname "$(command -v flutter)")")"
+          git apply "$GITHUB_WORKSPACE/.github/patches/flutter_3.24.4_dropdown_menu_enableFilter.diff"
+      - uses: dtolnay/rust-toolchain@e97e2d8cc328f1b50210efc529dca0028893a2d9
+        with:
+          toolchain: '1.75'
+      - uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32
+        with:
+          prefix-key: zavix-macos-${{ matrix.machine.arch }}
+      - uses: lukka/run-vcpkg@b1a0dd252f06b9e25b3c022a9a03bd7a427fb6a2
+        with:
+          vcpkgDirectory: ${{ github.workspace }}/vcpkg
+          vcpkgGitCommitId: ${{ env.VCPKG_COMMIT_ID }}
+          doNotCache: false
+      - uses: actions/cache@6f8efc29b200d32929f49075959781ed54ec270c
+        with:
+          path: /tmp/zavix-macos-vcpkg-cache
+          key: zavix-macos-${{ matrix.machine.arch }}-11-${{ env.VCPKG_COMMIT_ID }}-${{ hashFiles('res/vcpkg/**', 'res/zavix-macos-triplets/**') }}-v1
+      - name: Install native codecs
+        working-directory: macos-build
+        run: |
+          mkdir -p /tmp/zavix-macos-vcpkg-cache
+          "$VCPKG_ROOT/vcpkg" install --triplet '${{ matrix.machine.triplet }}' --host-triplet '${{ matrix.machine.triplet }}' --x-install-root="$VCPKG_ROOT/installed"
+      - name: Build native core and launchd service
+        run: |
+          cargo build --locked --release --features flutter,zavix-macos --lib --bin service
+      - name: Build branded macOS application
+        working-directory: flutter
+        env:
+          FLUTTER_XCODE_ARCHS: ${{ matrix.machine.arch }}
+          FLUTTER_XCODE_ONLY_ACTIVE_ARCH: 'YES'
+          FLUTTER_XCODE_CODE_SIGNING_ALLOWED: 'NO'
+        run: |
+          flutter pub get
+          flutter build macos --release --build-name=1.5.0 --build-number="${CLIENT_VERSION##*.}"
+          cp ../target/release/service "build/macos/Build/Products/Release/$CLIENT_APP.app/Contents/MacOS/service"
+      - name: Collect licenses and actual sources; verify ad-hoc code integrity
+        run: python3 scripts/archive_macos.py --arch '${{ matrix.machine.arch }}'
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: macos-${{ matrix.brand }}-${{ matrix.machine.arch }}
+          path: MacNative/
+          if-no-files-found: error
+      - name: Upload diagnostics on failure
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: macos-logs-${{ matrix.brand }}-${{ matrix.machine.arch }}
+          path: |
+            vcpkg/buildtrees/*/*.log
+            flutter/macos/Podfile.lock

@@ -43,6 +43,10 @@ pub fn core_main() -> Option<Vec<String>> {
     if crate::zavix::diagnostics_requested() {
         return None;
     }
+    #[cfg(all(target_os = "macos", feature = "zavix-macos"))]
+    if crate::zavix_macos::diagnostics_requested() {
+        return None;
+    }
     let mut args = Vec::new();
     let mut flutter_args = Vec::new();
     let mut i = 0;

@@ -23,6 +23,8 @@ pub use self::rendezvous_mediator::*;
 pub mod common;
 #[cfg(windows)]
 mod zavix;
+#[cfg(all(target_os = "macos", feature = "zavix-macos"))]
+mod zavix_macos;
 #[cfg(target_os = "android")]
 mod zavix_android;
 #[cfg(not(any(target_os = "ios")))]
