@@ -27,6 +27,8 @@ mod zavix;
 mod zavix_macos;
 #[cfg(target_os = "android")]
 mod zavix_android;
+#[cfg(target_os = "android")]
+mod zavix_android_mdm;
 #[cfg(not(any(target_os = "ios")))]
 pub mod ipc;
 #[cfg(not(any(

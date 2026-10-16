@@ -9,7 +9,13 @@ import android.provider.Settings
 /** Explicit administrative enrollment; the manifest requires the shell/system DUMP permission. */
 class ZavixProvisionReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
-        if (!BuildConfig.ZAVIX_MANAGED || intent.action != "app.zavix.remote.MDM_PREPARE") return
+        if (!BuildConfig.ZAVIX_MANAGED) return
+        if (intent.action == "app.zavix.remote.MDM_STATUS") {
+            resultCode = 0
+            resultData = ZavixMdm.status(context)
+            return
+        }
+        if (intent.action != "app.zavix.remote.MDM_PREPARE") return
         val serial = intent.getStringExtra("serial")
         val ticket = intent.getStringExtra("enrollment_ticket")
         if (serial != null && ticket != null) ZavixEnrollment.prepare(context, serial, ticket)

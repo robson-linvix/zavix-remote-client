@@ -27,7 +27,9 @@ object ZavixEnrollment {
             !ticket.matches(Regex("[A-Za-z0-9_-]{40,200}"))) return
         val existing = ZavixEnrollment.serial(context)
         if (existing.isNotBlank() && existing != serial) return
-        file(context).writeText(JSONObject().put("serial", serial).put("ticket", ticket).toString())
+        val value = saved(context)
+        value.remove("token")
+        file(context).writeText(value.put("serial", serial).put("ticket", ticket).toString())
     }
 
     @Synchronized
