@@ -2,8 +2,14 @@
 name: Remote Microsoft Store MSIX
 'on':
   workflow_dispatch:
+    inputs:
+      validate_run:
+        description: Optional existing candidate run to validate without rebuilding
+        type: string
+        default: ''
 permissions:
   contents: read
+  actions: read
 env:
   PYTHONUTF8: '1'
   SCITER_RUST_VERSION: '1.75'
@@ -18,8 +24,10 @@ env:
   FLUTTER_WINDOWS_ARM_VERSION: 3.44.9
 jobs:
   generate-bridge:
+    if: inputs.validate_run == ''
     uses: ./.github/workflows/bridge.yml
   build-RustDeskTempTopMostWindow:
+    if: inputs.validate_run == ''
     uses: ./.github/workflows/third-party-RustDeskTempTopMostWindow.yml
     with:
       upload-artifact: true
@@ -28,6 +36,7 @@ jobs:
       platform: x64
       target_version: Windows10
   build-for-windows-flutter:
+    if: inputs.validate_run == ''
     name: ${{ matrix.brand }} Store x64
     needs:
     - build-RustDeskTempTopMostWindow
@@ -104,6 +113,8 @@ jobs:
     - uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32
       with:
         prefix-key: ${{ matrix.job.os }}
+        cache-on-failure: true
+        cache-workspace-crates: true
     - name: Setup vcpkg with Github Actions binary cache
       uses: lukka/run-vcpkg@b1a0dd252f06b9e25b3c022a9a03bd7a427fb6a2
       with:
@@ -165,6 +176,7 @@ jobs:
         python scripts/build_msix.py --makeappx "$($sdk.FullName)/x64/MakeAppx.exe"
         if ($LASTEXITCODE -ne 0) { throw 'MSIX packaging failed' }
     - name: Install, activate, close and uninstall MSIX
+      shell: powershell
       run: ./scripts/test_msix.ps1 -SignTool $env:SIGNTOOL
     - name: Upload Store candidates and evidence
       if: always()
@@ -177,3 +189,35 @@ jobs:
         if-no-files-found: warn
         retention-days: 30
     timeout-minutes: 120
+  validate-existing-package:
+    if: inputs.validate_run != ''
+    runs-on: windows-2022
+    strategy:
+      fail-fast: false
+      matrix:
+        brand: [zavix, linvix]
+    steps:
+    - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+    - name: Download existing candidate
+      uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+      with:
+        name: ${{ matrix.brand }}-windows-msix-candidate
+        run-id: ${{ inputs.validate_run }}
+        github-token: ${{ github.token }}
+        path: candidate
+    - name: Validate package installation using Windows PowerShell Appx
+      shell: powershell
+      run: |
+        $sdk = Get-ChildItem 'C:/Program Files (x86)/Windows Kits/10/bin' -Directory | Where-Object { Test-Path (Join-Path $_.FullName 'x64/signtool.exe') } | Sort-Object Name -Descending | Select-Object -First 1
+        ./scripts/test_msix.ps1 -Output ./candidate/MSIXOutput -SignTool "$($sdk.FullName)/x64/signtool.exe"
+    - name: Upload validation evidence
+      if: always()
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+      with:
+        name: ${{ matrix.brand }}-msix-install-validation
+        path: |
+          candidate/MSIXOutput/validation.json
+          candidate/MSIXOutput/installed-window.png
+        if-no-files-found: ignore
+        retention-days: 30
+    timeout-minutes: 15

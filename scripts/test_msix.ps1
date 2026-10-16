@@ -52,7 +52,7 @@ try {
     Remove-AppxPackage -Package $package.PackageFullName
     $package = $null
     if (Get-AppxPackage -Name $manifest.identity.name) { throw 'MSIX uninstall failed' }
-    @{ schema='validated by MakeAppx'; installation='passed'; activation='passed'; close_exits='passed'; service='absent'; uninstall='passed'; signing='temporary CI certificate only'; store_certification='pending'; real_remote_session='pending' } | ConvertTo-Json | Set-Content (Join-Path $Output 'validation.json')
+    @{ schema='validated by MakeAppx'; installation='passed'; activation='passed'; close_exits='passed'; service='absent'; uninstall='passed'; signing='temporary CI certificate only'; store_certification='pending'; real_remote_session='pending' } | ConvertTo-Json | Set-Content -Encoding UTF8 (Join-Path $Output 'validation.json')
 } finally {
     Get-Process -Name $manifest.app_name -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
     if ($package) { Remove-AppxPackage -Package $package.PackageFullName -ErrorAction Continue }
