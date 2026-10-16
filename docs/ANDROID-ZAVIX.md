@@ -268,3 +268,15 @@ Referências: [Google Play](https://support.google.com/googleplay/android-develo
 [API alvo](https://developer.android.com/google/play/requirements/target-sdk),
 [16 KB](https://developer.android.com/guide/practices/page-sizes),
 [D-U-N-S](https://www.dnb.com/en-us/smb/duns/google-developers.html).
+
+## Cadastro nativo por MDM — candidata 1.3.0
+
+O `MainApplication` inicializa `ZavixMdm` antes do serviço de presença. O módulo Android configura o diretório privado do núcleo, lê/gera o ID e o persiste para o agente sem iniciar Flutter ou `MainActivity`. `src/zavix_android_mdm.rs` expõe apenas as operações JNI de identidade e senha permanente; o fluxo existente de captura não muda.
+
+O administrador entrega um ticket individual, de curta duração e vinculado ao serial, ao receptor `app.zavix.remote.MDM_PREPARE`. O receptor continua protegido por `android.permission.DUMP`. O agente nativo faz claim HTTPS, salva a senha individual quando ela é emitida, confirma ativação e envia presença com inventário. A senha não é compartilhada entre equipamentos nem fica embutida no APK. Reenvios de claim/ativação são idempotentes no servidor.
+
+`app.zavix.remote.MDM_STATUS`, no mesmo receptor protegido, retorna apenas serial, ID, versão e estados booleanos de configuração, senha, captura e controle. Tickets, tokens e senha nunca são retornados nessa inspeção. O script de provisionamento usa esse estado sem abrir a interface, e a homologação deve confirmar também ativação/presença recente no servidor e uma assistência real.
+
+Instalar um APK novo não equivale a provisioná-lo: o MDM precisa entregar a configuração individual e iniciar o componente autorizado após a instalação, além de preparar captura/acessibilidade e permitir o pacote no quiosque. O serviço do ZAVIX não substitui o Autoatendimento como aplicativo de inicialização. A candidata precisa de compilação nativa nova; não reutilizar `.so` de 1.2.x.
+
+Superfície de regressão: `MainApplication.kt` acrescenta apenas o hook de inicialização gerenciada; `ffi.kt` e `src/lib.rs` acrescentam o JNI Android; `AndroidManifest.xml` acrescenta a inspeção ao receptor protegido existente. `ZavixEnrollment.kt` preserva o ID ao receber um novo ticket. `ZavixPresence.kt` passa a concluir cadastro/ativação sem Flutter. `ZavixProvisionReceiver.kt` fornece inspeção nativa e recusa perfil desativado. Workflow e empacotamento identificam a release 1.3.0/código 1011. Perfis não gerenciados retornam antes das novas operações; Windows, macOS, protocolo de vídeo e submódulos permanecem no caminho anterior.
