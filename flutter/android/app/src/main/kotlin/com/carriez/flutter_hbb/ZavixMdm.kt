@@ -7,6 +7,7 @@ import org.json.JSONObject
 object ZavixMdm {
     fun initialize(context: Context) {
         if (!BuildConfig.ZAVIX_MANAGED) return
+        ZavixManagedAndroid.install(context)
         try {
             val prefs = context.getSharedPreferences(KEY_SHARED_PREFERENCES, Context.MODE_PRIVATE)
             val path = prefs.getString(KEY_APP_DIR_CONFIG_PATH, null)
