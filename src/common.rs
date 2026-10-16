@@ -1031,6 +1031,8 @@ pub fn check_software_update() {
 // Because the url is always `https://api.rustdesk.com/version/latest`.
 #[tokio::main(flavor = "current_thread")]
 pub async fn do_check_software_update() -> hbb_common::ResultType<()> {
+    #[cfg(all(target_os = "linux", feature = "zavix-linux"))]
+    return Ok(());
     // ZAVIX modifications, 2026-10-12: never download an upstream replacement on Windows.
     #[cfg(windows)]
     return Ok(());
@@ -2361,6 +2363,14 @@ pub fn rustdesk_interval(i: Interval) -> ThrottledInterval {
 }
 
 pub fn load_custom_client() {
+    #[cfg(all(target_os = "linux", feature = "zavix-linux"))]
+    {
+        if let Err(err) = crate::zavix_linux::initialize() {
+            eprintln!("Linux configuration error: {}", err);
+            std::process::exit(1);
+        }
+        return;
+    }
     #[cfg(all(target_os = "macos", feature = "zavix-macos"))]
     {
         if let Err(err) = crate::zavix_macos::initialize() {

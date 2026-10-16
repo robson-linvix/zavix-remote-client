@@ -1,0 +1,72 @@
+name: ZAVIX Remote Linux 32 bits GTK
+on:
+  workflow_dispatch:
+  push:
+    branches: [codex/linux-client-x64]
+    paths: ['.github/workflows/linux32-client.yml', 'scripts/linux32.Dockerfile', 'scripts/package_linux32.py', 'scripts/test_linux32.py', 'src/zavix_linux_gtk.rs', 'src/bin/zavixremote_gtk.rs']
+permissions:
+  contents: read
+concurrency:
+  group: zavix-linux32-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  bridge:
+    uses: ./.github/workflows/bridge.yml
+  linux32:
+    needs: bridge
+    runs-on: ubuntu-22.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          submodules: recursive
+      - uses: dtolnay/rust-toolchain@e97e2d8cc328f1b50210efc529dca0028893a2d9
+        with:
+          toolchain: '1.75'
+          targets: i686-unknown-linux-gnu
+      - uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32
+        with:
+          prefix-key: zavix-linux32-debian12-gtk
+          cache-on-failure: true
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+        with:
+          name: bridge-artifact
+          path: ./
+      - name: Prepare Debian 12 cross compiler and i386 libraries
+        run: docker build -t zavix-linux32-build -f scripts/linux32.Dockerfile .
+      - name: Compile native 32-bit client
+        run: |
+          docker run --rm -v "$PWD:/src" -v "$HOME/.cargo:/root/.cargo" -v "$HOME/.rustup:/root/.rustup" zavix-linux32-build bash -lc '
+            set -e
+            export PATH=/root/.cargo/bin:$PATH
+            git config --global --add safe.directory /src
+            cargo build --locked --release --target i686-unknown-linux-gnu --bin zavixremote-gtk --features zavix-linux-gtk,linux-pkg-config
+            file target/i686-unknown-linux-gnu/release/zavixremote-gtk
+            target/i686-unknown-linux-gnu/release/zavixremote-gtk --zavix-diagnostics
+          '
+      - name: Package and validate native GUI
+        run: |
+          docker run --init --rm -v "$PWD:/src" -v "$HOME/.cargo:/root/.cargo" -v "$HOME/.rustup:/root/.rustup" zavix-linux32-build bash -lc '
+            set -e
+            export PATH=/root/.cargo/bin:$PATH
+            git config --global --add safe.directory /src
+            git config --global --add safe.directory /src/libs/hbb_common
+            python3 scripts/package_linux32.py
+            timeout 180 xvfb-run -a -s "-screen 0 1280x800x24" dbus-run-session -- python3 scripts/test_linux32.py
+          '
+      - name: Restore runner ownership for artifact and cache access
+        if: always()
+        run: sudo chown -R "$(id -u):$(id -g)" "$HOME/.cargo" "$GITHUB_WORKSPACE"
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: zavix-linux32-gtk-candidate
+          path: Linux32Release/
+          if-no-files-found: error
+          retention-days: 30
+      - name: Failure evidence
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: zavix-linux32-failure
+          path: Linux32Release/
+          if-no-files-found: ignore

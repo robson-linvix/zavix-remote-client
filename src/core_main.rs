@@ -34,6 +34,10 @@ pub fn core_main() -> Option<Vec<String>> {
         return None;
     }
     crate::load_custom_client();
+    #[cfg(all(target_os = "linux", feature = "zavix-linux"))]
+    if crate::zavix_linux::diagnostics_requested() {
+        return None;
+    }
     #[cfg(windows)]
     if !crate::platform::windows::bootstrap() {
         // return None to terminate the process
