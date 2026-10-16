@@ -64,7 +64,7 @@ const val LONG_TAP_DELAY = 200L
 class InputService : AccessibilityService() {
 
     companion object {
-        var ctx: InputService? = null
+        @Volatile var ctx: InputService? = null
         val isOpen: Boolean
             get() = ctx != null
     }

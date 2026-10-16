@@ -13,5 +13,6 @@ class MainApplication : Application() {
         super.onCreate()
         Log.d(TAG, "App start")
         FFI.onAppStart(applicationContext)
+        ZavixPresence.start(applicationContext)
     }
 }

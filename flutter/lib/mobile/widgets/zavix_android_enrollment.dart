@@ -80,7 +80,7 @@ class ZavixAndroidEnrollment extends ChangeNotifier {
         await gFFI.invokeMethod('zavix_enrollment_saved', token);
       }
       await _request('enrollment/activate', token, {...packet, 'password_saved': true});
-      await _request('heartbeat', token, {...packet, 'capture_ready': model.mediaOk, 'control_ready': model.inputOk});
+      await gFFI.invokeMethod('zavix_enrollment_identity', packet['rustdesk_id']);
       _changed(serial, 'Vinculado ao painel ZAVIX Remote.');
     } catch (_) {
       _changed('', 'Não foi possível atualizar o vínculo. Nova tentativa automática em um minuto.');

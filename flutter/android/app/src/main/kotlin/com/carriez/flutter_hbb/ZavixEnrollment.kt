@@ -21,6 +21,7 @@ object ZavixEnrollment {
         return if (native.isNotBlank() && native != Build.UNKNOWN) native else saved(context).optString("serial")
     }
 
+    @Synchronized
     fun prepare(context: Context, serial: String, ticket: String) {
         if (!serial.matches(Regex("[A-Za-z0-9._-]{4,64}")) ||
             !ticket.matches(Regex("[A-Za-z0-9_-]{40,200}"))) return
@@ -29,6 +30,7 @@ object ZavixEnrollment {
         file(context).writeText(JSONObject().put("serial", serial).put("ticket", ticket).toString())
     }
 
+    @Synchronized
     fun configuration(context: Context): String = saved(context).apply {
         put("serial", serial(context)); put("model", Build.MODEL)
         put("app_version", BuildConfig.VERSION_NAME)
@@ -43,10 +45,20 @@ object ZavixEnrollment {
             .invoke(null, "ro.version.sunmi_versionname").toString().take(100)
     } catch (_: Exception) { "" }
 
+    @Synchronized
     fun acknowledge(context: Context, token: String) {
         if (!token.matches(Regex("[A-Za-z0-9_-]{40,200}"))) return
         val value = saved(context)
         value.remove("ticket"); value.put("token", token)
+        file(context).writeText(value.toString())
+    }
+
+    @Synchronized
+    fun rememberId(context: Context, id: String) {
+        if (!BuildConfig.ZAVIX_MANAGED || !id.matches(Regex("[0-9]{6,12}"))) return
+        val value = saved(context)
+        if (value.optString("rustdesk_id") == id) return
+        value.put("rustdesk_id", id)
         file(context).writeText(value.toString())
     }
 }

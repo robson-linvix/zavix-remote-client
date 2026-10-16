@@ -30,7 +30,7 @@ manifest = {
     "product": "Zavix Remote Sunmi",
     "revision": revision,
     "package": "app.zavix.remote.pilot.t2mini",
-    "version": "1.2.4-piloto",
+    "version": "1.2.5-piloto",
     "default_mode": "unattended",
     "distribution": "pilot-only",
     "signing": "stable-protected-test-key-not-for-google-play",

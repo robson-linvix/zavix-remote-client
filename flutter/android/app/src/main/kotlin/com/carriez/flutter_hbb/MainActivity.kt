@@ -269,6 +269,10 @@ class MainActivity : FlutterActivity() {
             // make sure result will be invoked, otherwise flutter will await forever
             when (call.method) {
                 "zavix_enrollment_config" -> result.success(ZavixEnrollment.configuration(context))
+                "zavix_enrollment_identity" -> {
+                    ZavixEnrollment.rememberId(context, call.arguments as? String ?: "")
+                    result.success(true)
+                }
                 "zavix_enrollment_saved" -> {
                     ZavixEnrollment.acknowledge(context, call.arguments as? String ?: "")
                     result.success(true)
