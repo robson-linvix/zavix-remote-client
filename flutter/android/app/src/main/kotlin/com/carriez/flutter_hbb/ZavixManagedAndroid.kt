@@ -1,8 +1,6 @@
 package com.carriez.flutter_hbb
 
 import android.content.Context
-import android.content.Intent
-import android.os.Build
 import android.util.Log
 import org.json.JSONArray
 import org.json.JSONObject
@@ -12,7 +10,8 @@ object ZavixManagedAndroid {
     private val allowed = setOf("app_started", "app_crashed", "projection_requested", "projection_granted",
         "projection_denied", "projection_stopped", "capture_unavailable", "capture_failed", "capture_started",
         "capture_stopped", "client_authorized", "client_requested", "boot_enabled", "boot_received",
-        "boot_requires_open", "boot_failed", "diagnostics_sent", "diagnostics_failed", "input_enabled", "input_disabled")
+        "boot_requires_open", "boot_failed", "capture_deferred", "projection_timeout",
+        "diagnostics_sent", "diagnostics_failed", "input_enabled", "input_disabled")
 
     private var crashInstalled = false
 
@@ -79,16 +78,8 @@ object ZavixManagedAndroid {
         record(context, "boot_received")
         val prefs = context.getSharedPreferences(KEY_SHARED_PREFERENCES, Context.MODE_PRIVATE)
         if (!prefs.getBoolean(KEY_START_ON_BOOT_OPT, true)) return
-        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.P) {
-            record(context, "boot_requires_open")
-            return
-        }
-        try {
-            context.startActivity(Intent(context, PermissionRequestTransparentActivity::class.java).apply {
-                action = ACT_REQUEST_MEDIA_PROJECTION
-                flags = Intent.FLAG_ACTIVITY_NEW_TASK
-                putExtra(EXT_INIT_FROM_BOOT, true)
-            })
-        } catch (error: Exception) { record(context, "boot_failed", error) }
+        // A boot receiver must never put capture consent over a running kiosk.
+        // Presence starts in MainApplication; capture waits for explicit preparation.
+        record(context, "boot_requires_open")
     }
 }

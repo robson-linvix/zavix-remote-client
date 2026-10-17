@@ -37,6 +37,6 @@ class ZavixProvisionReceiver : BroadcastReceiver() {
             .putBoolean(KEY_START_ON_BOOT_OPT, true).apply()
         ZavixManagedAndroid.restartFromBoot(context)
         resultCode = 0
-        resultData = "capture_requested"
+        resultData = "capture_deferred"
     }
 }

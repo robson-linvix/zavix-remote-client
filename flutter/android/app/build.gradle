@@ -92,6 +92,7 @@ android {
     }
 
     buildFeatures { buildConfig true }
+    testOptions { unitTests.includeAndroidResources = true }
 
     compileOptions {
         coreLibraryDesugaringEnabled true
@@ -160,6 +161,8 @@ flutter {
 }
 
 dependencies {
+    testImplementation 'junit:junit:4.13.2'
+    testImplementation 'org.robolectric:robolectric:4.16.1'
     coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.4'
     implementation 'com.google.protobuf:protobuf-javalite:3.20.1'
     implementation "androidx.media:media:1.6.0"

@@ -378,6 +378,11 @@ class MainService : Service() {
     }
 
     private fun requestMediaProjection(recovery: Boolean = false) {
+        if (BuildConfig.ZAVIX_MANAGED) {
+            cancelMediaProjectionRecovery()
+            ZavixManagedAndroid.record(this, "capture_deferred")
+            return
+        }
         val intent = Intent(this, PermissionRequestTransparentActivity::class.java).apply {
             action = ACT_REQUEST_MEDIA_PROJECTION
             flags = Intent.FLAG_ACTIVITY_NEW_TASK
